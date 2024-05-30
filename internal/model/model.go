@@ -41,7 +41,7 @@ type ResponseWithdraw struct {
 
 type ResponseWithdrawals []ResponseWithdraw
 
-type ResponseBonusSystem struct {
+type ResponseAccuralSystem struct {
 	OrderNumber OrderNumber `json:"order"`
 	Status      Status      `json:"status"`
 	Accrual     float64     `json:"accrual,omitempty"`
