@@ -2,21 +2,29 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/storage"
 )
 
 type AppServer struct {
 	storage storage.Storage
+	config  config.Config
 }
 
-func NewAppServer() (*AppServer, error) {
-	return nil, nil
+func NewAppServer(cfg config.Config) (*AppServer, error) {
+	app := AppServer{
+		config: cfg,
+	}
+	return &app, nil
 }
 
 func (a *AppServer) Start(ctx context.Context) error {
 	r := chi.NewRouter()
+	r.Use(checkRequestContentType)
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", nil)
 		r.Post("/login", nil)
@@ -28,5 +36,8 @@ func (a *AppServer) Start(ctx context.Context) error {
 		})
 		r.Get("/withdrawals", nil)
 	})
+	if err := http.ListenAndServe(a.config.AddressApp, r); err != nil {
+		return fmt.Errorf("запуск сервера. %w", err)
+	}
 	return nil
 }
