@@ -15,9 +15,10 @@ type AppServer struct {
 	config  config.Config
 }
 
-func NewAppServer(cfg config.Config) (*AppServer, error) {
+func NewAppServer(cfg config.Config, storage storage.Storage) (*AppServer, error) {
 	app := AppServer{
-		config: cfg,
+		config:  cfg,
+		storage: storage,
 	}
 	return &app, nil
 }
@@ -26,7 +27,7 @@ func (a *AppServer) Start(ctx context.Context) error {
 	r := chi.NewRouter()
 	r.Use(checkRequestContentType)
 	r.Route("/api/user", func(r chi.Router) {
-		r.Post("/register", nil)
+		r.Post("/register", a.rRegister)
 		r.Post("/login", nil)
 		r.Post("/orders", nil)
 		r.Get("/orders", nil)

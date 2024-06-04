@@ -6,6 +6,10 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+const (
+	secret = "my gophermart secret"
+)
+
 var (
 	addressApp           string
 	databaseURI          string
@@ -16,6 +20,7 @@ type Config struct {
 	AddressApp           string `env:"RUN_ADDRESS"`
 	DatabaseURI          string `env:"DATABASE_URI"`
 	AccuralSystemAddress string `env:"ACCURAL_SYSTEM_ADDRESS"`
+	Secret               string `env:"SECRET"`
 }
 
 func LoadConfig() (Config, error) {
@@ -39,6 +44,9 @@ func LoadConfig() (Config, error) {
 	}
 	if cfg.AccuralSystemAddress == "" {
 		cfg.AccuralSystemAddress = accuralSystemAddress
+	}
+	if cfg.Secret == "" {
+		cfg.Secret = secret
 	}
 	return Config{}, nil
 }
