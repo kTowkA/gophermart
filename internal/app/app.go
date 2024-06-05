@@ -26,11 +26,11 @@ func NewAppServer(cfg config.Config, storage storage.Storage) (*AppServer, error
 func (a *AppServer) Start(ctx context.Context) error {
 	r := chi.NewRouter()
 	// r.Use(middleware.AllowContentType("application/json"), a.checkOnlyAuthUser)
-	r.Use(checkRequestContentType, checkPOSTJSON, a.checkOnlyAuthUser)
+	r.Use(checkPOSTBody, a.checkOnlyAuthUser)
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", a.rRegister)
 		r.Post("/login", a.rLogin)
-		r.Post("/orders", nil)
+		r.Post("/orders", a.rOrdersPost)
 		r.Get("/orders", nil)
 		r.Route("/balance", func(r chi.Router) {
 			r.Get("/", nil)

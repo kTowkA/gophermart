@@ -1,30 +1,14 @@
 package app
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 )
 
-func checkRequestContentType(next http.Handler) http.Handler {
-	var allowedTypes = []string{
-		"application/json",
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ct := r.Header.Get("content-Type")
-		for _, a := range allowedTypes {
-			if strings.HasPrefix(ct, a) {
-				next.ServeHTTP(w, r)
-				return
-			}
-		}
-		w.WriteHeader(http.StatusBadRequest)
-	})
-}
+type userClaims string
+
 func (a *AppServer) checkOnlyAuthUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.Trim(r.URL.Path, "/")
@@ -41,38 +25,27 @@ func (a *AppServer) checkOnlyAuthUser(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		_, err = getUserIDFromToken(cookieToken.Value, a.config.Secret)
+		uc, err := getUserClaimsFromToken(cookieToken.Value, a.config.Secret)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
+		modifyRequest := r.WithContext(context.WithValue(r.Context(), userClaims("claims"), uc))
+		next.ServeHTTP(w, modifyRequest)
 	})
 }
-
-// getUserIDFromToken - получает ID из JWT токена
-func getUserIDFromToken(tokenString, secret string) (uuid.UUID, error) {
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims,
-		func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("неожиданный метод подписи: %v", t.Header["alg"])
-			}
-			return []byte(secret), nil
-		})
-	if err != nil {
-		return uuid.UUID{}, err
+func checkContentType(r *http.Request, allowedContentTypes []string) bool {
+	ct := r.Header.Get("content-type")
+	for _, act := range allowedContentTypes {
+		if strings.HasPrefix(ct, act) {
+			return true
+		}
 	}
-
-	if !token.Valid {
-		return uuid.UUID{}, fmt.Errorf("токен не прошел проверку")
-	}
-
-	return claims.UserID, nil
+	return false
 }
 
-// checkPOSTJSON проверяем пост запрос, что есть тело
-func checkPOSTJSON(next http.Handler) http.Handler {
+// checkPOSTBody проверяем пост запрос, что есть тело
+func checkPOSTBody(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			next.ServeHTTP(w, r)

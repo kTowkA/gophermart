@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ type Test struct {
 	name           string
 	path           string
 	method         string
+	contentType    string
 	body           any
 	wantStatusCode int
 }
@@ -51,62 +53,6 @@ func (suite *AppTestSuite) TearDownSuite() {
 	suite.mockStorage.AssertExpectations(suite.T())
 }
 
-func (suite *AppTestSuite) TestMiddlewareCheckContentType() {
-	type testCase struct {
-		name             string
-		contentType      string
-		URL              string
-		isBadContentType bool
-	}
-	tests := []testCase{
-		{
-			name:             "главный правильный",
-			contentType:      "application/json",
-			URL:              "/",
-			isBadContentType: false,
-		},
-		{
-			name:             "главный неправильный",
-			contentType:      "application/xml",
-			URL:              "/",
-			isBadContentType: true,
-		},
-		{
-			name:             "login правильный",
-			contentType:      "application/json",
-			URL:              "/api/user/login",
-			isBadContentType: false,
-		},
-		{
-			name:             "login неправильный",
-			contentType:      "plain/text",
-			URL:              "/api/user/login",
-			isBadContentType: true,
-		},
-		{
-			name:             "unknow неправильный",
-			contentType:      "plain/text",
-			URL:              "/api/user/unknow",
-			isBadContentType: true,
-		},
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client := resty.New()
-	for _, t := range tests {
-		resp, err := client.R().
-			SetContext(ctx).
-			SetHeader("content-Type", t.contentType).
-			Get("http://localhost" + suite.app.config.AddressApp + t.URL)
-		suite.Assert().NoError(err)
-		if t.isBadContentType {
-			suite.Assert().EqualValues(http.StatusBadRequest, resp.StatusCode())
-			continue
-		}
-		suite.Assert().NotEqualValues(http.StatusBadRequest, resp.StatusCode())
-	}
-}
 func (suite *AppTestSuite) TestMiddlewareCheckOnlyAuthUser() {
 	// здесь не сохраняем куки между запросами
 	suite.mockStorage.On("SaveUser", mock.Anything, "test-middleware-login", mock.AnythingOfType("string")).Return(uuid.New(), nil)
@@ -158,7 +104,6 @@ func (suite *AppTestSuite) TestMiddlewareCheckOnlyAuthUser() {
 		suite.NoError(err, t.name)
 		suite.EqualValues(t.wantStatusCode, resp.StatusCode(), t.name)
 	}
-
 }
 func (suite *AppTestSuite) TestRouteRegister() {
 
@@ -265,6 +210,86 @@ func (suite *AppTestSuite) TestRouteLogin() {
 		suite.EqualValues(t.wantStatusCode, resp.StatusCode(), t.name)
 	}
 }
+
+func (suite *AppTestSuite) TestRouteOrdersPost() {
+	testPassword := "test"
+	hashTestPassword, err := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.DefaultCost)
+	suite.NoError(err)
+	suite.mockStorage.On("PasswordHash", mock.Anything, "test-login-valid").Return(uuid.New(), string(hashTestPassword), nil)
+
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, int64(49927398716)).Return(nil)
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, int64(5062821234567892)).Return(storage.ErrOrderWasAlreadyUpload)
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, int64(1234561239)).Return(storage.ErrOrderWasUploadByAnotherUser)
+	tests := []Test{
+		{
+			name:           "пользовать успешно аутентифицирован",
+			path:           "/api/user/login",
+			body:           `{"login":"test-login-valid","password":"` + testPassword + `"}`,
+			wantStatusCode: http.StatusOK,
+			method:         http.MethodPost,
+			contentType:    "application/json",
+		},
+		{
+			name:           "ошибочный контент-тайп",
+			path:           "/api/user/orders",
+			method:         http.MethodPost,
+			contentType:    "application/json",
+			wantStatusCode: http.StatusBadRequest,
+			body:           "49927398716",
+		},
+		{
+			name:           "пустое тело",
+			path:           "/api/user/orders",
+			method:         http.MethodPost,
+			contentType:    "text/plain",
+			wantStatusCode: http.StatusUnprocessableEntity,
+			body:           strings.NewReader(""),
+		},
+		{
+			name:           "невалидный номер",
+			path:           "/api/user/orders",
+			method:         http.MethodPost,
+			contentType:    "text/plain",
+			wantStatusCode: http.StatusUnprocessableEntity,
+			body:           "499273987161",
+		},
+		{
+			name:           "все хорошо",
+			path:           "/api/user/orders",
+			method:         http.MethodPost,
+			contentType:    "text/plain",
+			wantStatusCode: http.StatusCreated,
+			body:           "49927398716",
+		},
+		{
+			name:           "уже был загружен",
+			path:           "/api/user/orders",
+			method:         http.MethodPost,
+			contentType:    "text/plain",
+			wantStatusCode: http.StatusOK,
+			body:           "5062821234567892",
+		},
+		{
+			name:           "другой пользователь загрузил",
+			path:           "/api/user/orders",
+			method:         http.MethodPost,
+			contentType:    "text/plain",
+			wantStatusCode: http.StatusConflict,
+			body:           "1234561239",
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client := resty.
+		New().
+		SetBaseURL("http://localhost" + suite.app.config.AddressApp)
+	for _, t := range tests {
+		resp, err := client.R().SetContext(ctx).SetBody(t.body).SetHeader("content-type", t.contentType).Post(t.path)
+		suite.NoError(err, t.name)
+		suite.EqualValues(t.wantStatusCode, resp.StatusCode(), t.name)
+	}
+}
+
 func TestExampleTestSuite(t *testing.T) {
 	suite.Run(t, new(AppTestSuite))
 }

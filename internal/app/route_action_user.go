@@ -3,20 +3,21 @@ package app
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var cookieTokenName = "app_token"
-
 // rRegister хендлер для регистрации пользователей
 func (a *AppServer) rRegister(w http.ResponseWriter, r *http.Request) {
+	if !checkContentType(r, []string{"application/json"}) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	// раскодируем переданные данные
 	req := model.RequestRegister{}
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -59,6 +60,10 @@ func (a *AppServer) rRegister(w http.ResponseWriter, r *http.Request) {
 
 // rLogin хендлер для получения токена для работы
 func (a *AppServer) rLogin(w http.ResponseWriter, r *http.Request) {
+	if !checkContentType(r, []string{"application/json"}) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	// раскодируем переданные данные
 	req := model.RequestLogin{}
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -95,33 +100,37 @@ func (a *AppServer) rLogin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// Claims — структура утверждений, которая включает стандартные утверждения и
-// одно пользовательское UserID
-type Claims struct {
-	jwt.RegisteredClaims
-	UserID uuid.UUID
-	Login  string
-}
-
-// buildJWTString создаёт токен и возвращает его в виде строки.
-func buildJWTString(userID uuid.UUID, userLogin, appSecret string, dur time.Duration) (string, error) {
-	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(dur)),
-		},
-		// собственное утверждение
-		UserID: userID,
-		Login:  userLogin,
-	})
-
-	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(appSecret))
-	if err != nil {
-		return "", err
+func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
+	if !checkContentType(r, []string{"text/plain"}) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
+	orderBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
-	// возвращаем строку токена
-	return tokenString, nil
+	order, ok := validLuhnNumber(string(orderBytes))
+	if !ok {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	uc, ok := (r.Context().Value(userClaims("claims"))).(UserClaims)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = a.storage.SaveOrder(r.Context(), uc.UserID, order)
+	switch {
+	case errors.Is(err, storage.ErrOrderWasAlreadyUpload):
+		w.WriteHeader(http.StatusOK)
+	case errors.Is(err, storage.ErrOrderWasUploadByAnotherUser):
+		w.WriteHeader(http.StatusConflict)
+	case err != nil:
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		w.WriteHeader(http.StatusCreated)
+	}
 }

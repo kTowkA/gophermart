@@ -70,6 +70,24 @@ func (_m *StorageUser) PasswordHash(ctx context.Context, login string) (uuid.UUI
 	return r0, r1, r2
 }
 
+// SaveOrder provides a mock function with given fields: ctx, userID, order
+func (_m *StorageUser) SaveOrder(ctx context.Context, userID uuid.UUID, order int64) error {
+	ret := _m.Called(ctx, userID, order)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveOrder")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int64) error); ok {
+		r0 = rf(ctx, userID, order)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SaveUser provides a mock function with given fields: ctx, login, passwordHash
 func (_m *StorageUser) SaveUser(ctx context.Context, login string, passwordHash string) (uuid.UUID, error) {
 	ret := _m.Called(ctx, login, passwordHash)
