@@ -33,6 +33,43 @@ func (_m *Storage) Close(ctx context.Context) error {
 	return r0
 }
 
+// PasswordHash provides a mock function with given fields: ctx, login
+func (_m *Storage) PasswordHash(ctx context.Context, login string) (uuid.UUID, string, error) {
+	ret := _m.Called(ctx, login)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PasswordHash")
+	}
+
+	var r0 uuid.UUID
+	var r1 string
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (uuid.UUID, string, error)); ok {
+		return rf(ctx, login)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) uuid.UUID); ok {
+		r0 = rf(ctx, login)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(uuid.UUID)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) string); ok {
+		r1 = rf(ctx, login)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, string) error); ok {
+		r2 = rf(ctx, login)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // SaveUser provides a mock function with given fields: ctx, login, passwordHash
 func (_m *Storage) SaveUser(ctx context.Context, login string, passwordHash string) (uuid.UUID, error) {
 	ret := _m.Called(ctx, login, passwordHash)

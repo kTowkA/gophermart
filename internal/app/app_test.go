@@ -15,6 +15,7 @@ import (
 	mocks "github.com/kTowkA/gophermart/internal/storage/mocs"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var port = 8188
@@ -119,7 +120,7 @@ func (suite *AppTestSuite) TestMiddlewareCheckOnlyAuthUser() {
 		},
 		{
 			name:           "запрос только для зарегистрированных пользователей",
-			path:           "/api/user/login",
+			path:           "/api/user/balance",
 			method:         http.MethodPost,
 			body:           `{"login":"test-middleware-login","password":"1"}`,
 			wantStatusCode: http.StatusUnauthorized,
@@ -159,7 +160,7 @@ func (suite *AppTestSuite) TestMiddlewareCheckOnlyAuthUser() {
 	}
 
 }
-func (suite *AppTestSuite) TestRegister() {
+func (suite *AppTestSuite) TestRouteRegister() {
 
 	suite.mockStorage.On("SaveUser", mock.Anything, "login-valid", mock.AnythingOfType("string")).Return(uuid.New(), nil)
 	suite.mockStorage.On("SaveUser", mock.Anything, "login-is_used", mock.AnythingOfType("string")).Return(uuid.New(), storage.ErrLoginIsUsed)
@@ -224,7 +225,46 @@ func (suite *AppTestSuite) TestRegister() {
 		suite.EqualValues(t.wantStatusCode, resp.StatusCode())
 	}
 }
+func (suite *AppTestSuite) TestRouteLogin() {
+	testPassword := "test"
+	hashTestPassword, err := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.DefaultCost)
+	suite.NoError(err)
+	suite.mockStorage.On("PasswordHash", mock.Anything, "test-login-valid").Return(uuid.New(), string(hashTestPassword), nil)
+	tests := []Test{
+		{
+			name:           "пользовать успешно аутентифицирован",
+			path:           "/api/user/login",
+			body:           `{"login":"test-login-valid","password":"` + testPassword + `"}`,
+			wantStatusCode: http.StatusOK,
+		},
+		{
+			name:           "невалидный запрос",
+			path:           "/api/user/login",
+			body:           `{"login":test-login-valid,"password":"` + testPassword + `"}`,
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name:           "пароль не совпадает",
+			path:           "/api/user/login",
+			body:           `{"login":"test-login-valid","password":"` + testPassword + `+1"}`,
+			wantStatusCode: http.StatusUnauthorized,
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
+	for _, t := range tests {
+		resp, err := resty.New().
+			SetHeader("content-type", "application/json").
+			SetBaseURL("http://localhost" + suite.app.config.AddressApp).
+			R().
+			SetBody(t.body).
+			SetContext(ctx).
+			Post(t.path)
+		suite.NoError(err, t.name)
+		suite.EqualValues(t.wantStatusCode, resp.StatusCode(), t.name)
+	}
+}
 func TestExampleTestSuite(t *testing.T) {
 	suite.Run(t, new(AppTestSuite))
 }
