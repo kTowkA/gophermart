@@ -31,7 +31,7 @@ func (a *AppServer) Start(ctx context.Context) error {
 		r.Post("/register", a.rRegister)
 		r.Post("/login", a.rLogin)
 		r.Post("/orders", a.rOrdersPost)
-		r.Get("/orders", nil)
+		r.Get("/orders", a.rOrdersGet)
 		r.Route("/balance", func(r chi.Router) {
 			r.Get("/", nil)
 			r.Post("/withdraw", nil)

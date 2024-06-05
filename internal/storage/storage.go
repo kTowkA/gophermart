@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/kTowkA/gophermart/internal/model"
 )
 
 type Storage interface {
@@ -22,6 +23,7 @@ type StorageUser interface {
 	// может вернуть ErrOrderWasUploadByAnotherUser если другой пользователь уже загрузил заказ с таким номером
 	// или ErrOrderWasAlreadyUpload если пользователь уже сохранял заказ order
 	SaveOrder(ctx context.Context, userID uuid.UUID, order int64) error
+	Orders(ctx context.Context, userID uuid.UUID) (model.ResponseOrders, error)
 	// Close закрывает соединение с хранилищем
 	Close(ctx context.Context) error
 }

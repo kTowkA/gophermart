@@ -5,6 +5,7 @@ package mocks
 import (
 	context "context"
 
+	model "github.com/kTowkA/gophermart/internal/model"
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -31,6 +32,36 @@ func (_m *StorageUser) Close(ctx context.Context) error {
 	}
 
 	return r0
+}
+
+// Orders provides a mock function with given fields: ctx, userID
+func (_m *StorageUser) Orders(ctx context.Context, userID uuid.UUID) (model.ResponseOrders, error) {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Orders")
+	}
+
+	var r0 model.ResponseOrders
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (model.ResponseOrders, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) model.ResponseOrders); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(model.ResponseOrders)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // PasswordHash provides a mock function with given fields: ctx, login

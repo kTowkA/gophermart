@@ -134,3 +134,31 @@ func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	}
 }
+func (a *AppServer) rOrdersGet(w http.ResponseWriter, r *http.Request) {
+
+	uc, ok := (r.Context().Value(userClaims("claims"))).(UserClaims)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	orders, err := a.storage.Orders(r.Context(), uc.UserID)
+	if errors.Is(err, storage.ErrOrdersNotFound) {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// log.Println("ORDERS", orders)
+	// ordersB, err := json.Marshal(orders)
+	w.Header().Add("content-type", "application/json")
+	err = json.NewEncoder(w).Encode(orders)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// w.Write(ordersB)
+	w.WriteHeader(http.StatusOK)
+}
