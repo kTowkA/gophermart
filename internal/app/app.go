@@ -25,7 +25,8 @@ func NewAppServer(cfg config.Config, storage storage.Storage) (*AppServer, error
 
 func (a *AppServer) Start(ctx context.Context) error {
 	r := chi.NewRouter()
-	r.Use(checkRequestContentType)
+	// r.Use(middleware.AllowContentType("application/json"), a.checkOnlyAuthUser)
+	r.Use(checkRequestContentType, a.checkOnlyAuthUser)
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", a.rRegister)
 		r.Post("/login", nil)

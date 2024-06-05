@@ -21,6 +21,8 @@ var port = 8188
 
 type Test struct {
 	name           string
+	path           string
+	method         string
 	body           any
 	wantStatusCode int
 }
@@ -48,7 +50,7 @@ func (suite *AppTestSuite) TearDownSuite() {
 	suite.mockStorage.AssertExpectations(suite.T())
 }
 
-func (suite *AppTestSuite) TestCheckContentType() {
+func (suite *AppTestSuite) TestMiddlewareCheckContentType() {
 	type testCase struct {
 		name             string
 		contentType      string
@@ -104,7 +106,59 @@ func (suite *AppTestSuite) TestCheckContentType() {
 		suite.Assert().NotEqualValues(http.StatusBadRequest, resp.StatusCode())
 	}
 }
+func (suite *AppTestSuite) TestMiddlewareCheckOnlyAuthUser() {
+	// здесь не сохраняем куки между запросами
+	suite.mockStorage.On("SaveUser", mock.Anything, "test-middleware-login", mock.AnythingOfType("string")).Return(uuid.New(), nil)
+	tests := []Test{
+		{
+			name:           "разрешенный запрос всем пользователям",
+			path:           "/api/user/register",
+			method:         http.MethodPost,
+			body:           `{"login":"test-middleware-login","password":"1"}`,
+			wantStatusCode: http.StatusOK,
+		},
+		{
+			name:           "запрос только для зарегистрированных пользователей",
+			path:           "/api/user/login",
+			method:         http.MethodPost,
+			body:           `{"login":"test-middleware-login","password":"1"}`,
+			wantStatusCode: http.StatusUnauthorized,
+		},
+		{
+			name:           "запрос только для зарегистрированных пользователей",
+			path:           "/api/user/orders",
+			method:         http.MethodGet,
+			body:           `{"zzz":"zz","z":"z"}`,
+			wantStatusCode: http.StatusUnauthorized,
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
+	for _, t := range tests {
+		var (
+			resp *resty.Response
+			err  error
+		)
+		req := resty.New().
+			SetHeader("content-type", "application/json").
+			SetBaseURL("http://localhost" + suite.app.config.AddressApp).
+			R().
+			SetContext(ctx).
+			SetBody(t.body)
+		switch t.method {
+		case http.MethodPost:
+			resp, err = req.Post(t.path)
+		case http.MethodGet:
+			resp, err = req.Get(t.path)
+		default:
+			continue
+		}
+		suite.NoError(err, t.name)
+		suite.EqualValues(t.wantStatusCode, resp.StatusCode(), t.name)
+	}
+
+}
 func (suite *AppTestSuite) TestRegister() {
 
 	suite.mockStorage.On("SaveUser", mock.Anything, "login-valid", mock.AnythingOfType("string")).Return(uuid.New(), nil)
@@ -169,7 +223,6 @@ func (suite *AppTestSuite) TestRegister() {
 		suite.NoError(err)
 		suite.EqualValues(t.wantStatusCode, resp.StatusCode())
 	}
-	suite.mockStorage.AssertExpectations(suite.T())
 }
 
 func TestExampleTestSuite(t *testing.T) {
