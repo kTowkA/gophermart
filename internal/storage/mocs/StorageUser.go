@@ -34,6 +34,34 @@ func (_m *StorageUser) Close(ctx context.Context) error {
 	return r0
 }
 
+// HashPassword provides a mock function with given fields: ctx, userID
+func (_m *StorageUser) HashPassword(ctx context.Context, userID uuid.UUID) (string, error) {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HashPassword")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (string, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) string); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Orders provides a mock function with given fields: ctx, userID
 func (_m *StorageUser) Orders(ctx context.Context, userID uuid.UUID) (model.ResponseOrders, error) {
 	ret := _m.Called(ctx, userID)
@@ -64,43 +92,6 @@ func (_m *StorageUser) Orders(ctx context.Context, userID uuid.UUID) (model.Resp
 	return r0, r1
 }
 
-// PasswordHash provides a mock function with given fields: ctx, login
-func (_m *StorageUser) PasswordHash(ctx context.Context, login string) (uuid.UUID, string, error) {
-	ret := _m.Called(ctx, login)
-
-	if len(ret) == 0 {
-		panic("no return value specified for PasswordHash")
-	}
-
-	var r0 uuid.UUID
-	var r1 string
-	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (uuid.UUID, string, error)); ok {
-		return rf(ctx, login)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) uuid.UUID); ok {
-		r0 = rf(ctx, login)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(uuid.UUID)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) string); ok {
-		r1 = rf(ctx, login)
-	} else {
-		r1 = ret.Get(1).(string)
-	}
-
-	if rf, ok := ret.Get(2).(func(context.Context, string) error); ok {
-		r2 = rf(ctx, login)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
-}
-
 // SaveOrder provides a mock function with given fields: ctx, userID, order
 func (_m *StorageUser) SaveOrder(ctx context.Context, userID uuid.UUID, order int64) error {
 	ret := _m.Called(ctx, userID, order)
@@ -119,9 +110,9 @@ func (_m *StorageUser) SaveOrder(ctx context.Context, userID uuid.UUID, order in
 	return r0
 }
 
-// SaveUser provides a mock function with given fields: ctx, login, passwordHash
-func (_m *StorageUser) SaveUser(ctx context.Context, login string, passwordHash string) (uuid.UUID, error) {
-	ret := _m.Called(ctx, login, passwordHash)
+// SaveUser provides a mock function with given fields: ctx, login, hashPassword
+func (_m *StorageUser) SaveUser(ctx context.Context, login string, hashPassword string) (uuid.UUID, error) {
+	ret := _m.Called(ctx, login, hashPassword)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveUser")
@@ -130,10 +121,10 @@ func (_m *StorageUser) SaveUser(ctx context.Context, login string, passwordHash 
 	var r0 uuid.UUID
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) (uuid.UUID, error)); ok {
-		return rf(ctx, login, passwordHash)
+		return rf(ctx, login, hashPassword)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) uuid.UUID); ok {
-		r0 = rf(ctx, login, passwordHash)
+		r0 = rf(ctx, login, hashPassword)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(uuid.UUID)
@@ -141,7 +132,37 @@ func (_m *StorageUser) SaveUser(ctx context.Context, login string, passwordHash 
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, login, passwordHash)
+		r1 = rf(ctx, login, hashPassword)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UserID provides a mock function with given fields: ctx, login
+func (_m *StorageUser) UserID(ctx context.Context, login string) (uuid.UUID, error) {
+	ret := _m.Called(ctx, login)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UserID")
+	}
+
+	var r0 uuid.UUID
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (uuid.UUID, error)); ok {
+		return rf(ctx, login)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) uuid.UUID); ok {
+		r0 = rf(ctx, login)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(uuid.UUID)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, login)
 	} else {
 		r1 = ret.Error(1)
 	}

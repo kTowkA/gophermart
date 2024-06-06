@@ -72,7 +72,17 @@ func (a *AppServer) rLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	userID, hashPassword, err := a.storage.PasswordHash(r.Context(), req.Login)
+
+	userID, err := a.storage.UserID(r.Context(), req.Login)
+	if errors.Is(err, storage.ErrUserNotFound) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	hashPassword, err := a.storage.HashPassword(r.Context(), userID)
 	if errors.Is(err, storage.ErrUserNotFound) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

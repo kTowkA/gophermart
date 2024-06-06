@@ -175,24 +175,42 @@ func (suite *AppTestSuite) TestRouteLogin() {
 	testPassword := "test"
 	hashTestPassword, err := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.DefaultCost)
 	suite.NoError(err)
-	suite.mockStorage.On("PasswordHash", mock.Anything, "test-login-valid").Return(uuid.New(), string(hashTestPassword), nil)
+	userIDvalid, userIDnotFound := uuid.New(), uuid.New()
+	validLogin, validLoginButUserIDnotFound, loginNotFound := "login-valid", "login-valid-2", "login-not-found"
+	suite.mockStorage.On("UserID", mock.Anything, loginNotFound).Return(uuid.UUID{}, storage.ErrUserNotFound)
+	suite.mockStorage.On("UserID", mock.Anything, validLoginButUserIDnotFound).Return(userIDnotFound, nil)
+	suite.mockStorage.On("HashPassword", mock.Anything, userIDnotFound).Return("", storage.ErrUserNotFound)
+	suite.mockStorage.On("UserID", mock.Anything, validLogin).Return(userIDvalid, nil)
+	suite.mockStorage.On("HashPassword", mock.Anything, userIDvalid).Return(string(hashTestPassword), nil)
 	tests := []Test{
+		{
+			name:           "пользовать не найден (по логину)",
+			path:           "/api/user/login",
+			body:           `{"login":"` + loginNotFound + `","password":"` + testPassword + `"}`,
+			wantStatusCode: http.StatusUnauthorized,
+		},
+		{
+			name:           "пользовать не найден (по id)",
+			path:           "/api/user/login",
+			body:           `{"login":"` + validLoginButUserIDnotFound + `","password":"` + testPassword + `"}`,
+			wantStatusCode: http.StatusUnauthorized,
+		},
 		{
 			name:           "пользовать успешно аутентифицирован",
 			path:           "/api/user/login",
-			body:           `{"login":"test-login-valid","password":"` + testPassword + `"}`,
+			body:           `{"login":"` + validLogin + `","password":"` + testPassword + `"}`,
 			wantStatusCode: http.StatusOK,
 		},
 		{
-			name:           "невалидный запрос",
+			name:           "невалидный запрос (ошибка в JSON)",
 			path:           "/api/user/login",
-			body:           `{"login":test-login-valid,"password":"` + testPassword + `"}`,
+			body:           `{"login":` + validLogin + `,"password":"` + testPassword + `"}`,
 			wantStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:           "пароль не совпадает",
 			path:           "/api/user/login",
-			body:           `{"login":"test-login-valid","password":"` + testPassword + `+1"}`,
+			body:           `{"login":"` + validLogin + `","password":"` + testPassword + `+1"}`,
 			wantStatusCode: http.StatusUnauthorized,
 		},
 	}
@@ -281,12 +299,14 @@ func (suite *AppTestSuite) TestRouteOrdersPost() {
 }
 
 // LoggedClient получаем авторизованного клиента
-func (suite *AppTestSuite) LoggedClient(ctx context.Context, login, password string, called string) (*resty.Client, *resty.Response, error) {
+func (suite *AppTestSuite) LoggedClient(ctx context.Context, login, password string, called string) (*resty.Client, uuid.UUID, error) {
 
 	hashTestPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	suite.NoError(err)
 
-	suite.mockStorage.On("PasswordHash", mock.Anything, login).Return(uuid.New(), string(hashTestPassword), nil)
+	userID := uuid.New()
+	suite.mockStorage.On("UserID", mock.Anything, login).Return(userID, nil)
+	suite.mockStorage.On("HashPassword", mock.Anything, userID).Return(string(hashTestPassword), nil)
 
 	client := resty.
 		New().
@@ -298,27 +318,18 @@ func (suite *AppTestSuite) LoggedClient(ctx context.Context, login, password str
 		Post("/api/user/login")
 	suite.NoError(err, "logged client", "called: "+called)
 	suite.EqualValues(http.StatusOK, resp.StatusCode(), "logged client", "called: "+called)
-	return client, resp, err
+	return client, userID, err
 }
 
 // RouteOrdersGetV1 первый вариант - у пользователя нет заказов
 func (suite *AppTestSuite) RouteOrdersGetV1(ctx context.Context) {
 
-	client, resp, err := suite.LoggedClient(ctx, "login orders get 1", "password", "RouteOrdersGetV1")
+	client, userID, err := suite.LoggedClient(ctx, "login orders get 1", "password", "RouteOrdersGetV1")
 	suite.Require().NoError(err)
 
-	var userClaims UserClaims
-	for _, c := range resp.Cookies() {
-		if c.Name == cookieTokenName {
-			userClaims, err = getUserClaimsFromToken(c.Value, suite.app.config.Secret)
-			suite.NoError(err)
-			break
-		}
-	}
-	suite.NotEqualValues(UserClaims{}, userClaims, "userClaims")
-	suite.mockStorage.On("Orders", mock.Anything, userClaims.UserID).Return(nil, storage.ErrOrdersNotFound)
+	suite.mockStorage.On("Orders", mock.Anything, userID).Return(nil, storage.ErrOrdersNotFound)
 
-	resp, err = client.
+	resp, err := client.
 		R().SetContext(ctx).
 		Get("/api/user/orders")
 	suite.NoError(err, "orders get not orders")
@@ -327,21 +338,12 @@ func (suite *AppTestSuite) RouteOrdersGetV1(ctx context.Context) {
 
 // RouteOrdersGetV2 второй вариант - произошла ошибка при запросе к БД
 func (suite *AppTestSuite) RouteOrdersGetV2(ctx context.Context) {
-	client, resp, err := suite.LoggedClient(ctx, "login orders get 2", "password", "RouteOrdersGetV2")
+	client, userID, err := suite.LoggedClient(ctx, "login orders get 2", "password", "RouteOrdersGetV2")
 	suite.Require().NoError(err)
 
-	userClaims := UserClaims{}
-	for _, c := range resp.Cookies() {
-		if c.Name == cookieTokenName {
-			userClaims, err = getUserClaimsFromToken(c.Value, suite.app.config.Secret)
-			suite.NoError(err)
-			break
-		}
-	}
-	suite.NotEqualValues(UserClaims{}, userClaims, "userClaims")
-	suite.mockStorage.On("Orders", mock.Anything, userClaims.UserID).Return(nil, errors.New("get orders error"))
+	suite.mockStorage.On("Orders", mock.Anything, userID).Return(nil, errors.New("get orders error"))
 
-	resp, err = client.
+	resp, err := client.
 		R().SetContext(ctx).
 		Get("/api/user/orders")
 	suite.NoError(err, "orders get error")
@@ -350,18 +352,9 @@ func (suite *AppTestSuite) RouteOrdersGetV2(ctx context.Context) {
 
 // RouteOrdersGetV3 третий вариант - есть данные
 func (suite *AppTestSuite) RouteOrdersGetV3(ctx context.Context) {
-	client, resp, err := suite.LoggedClient(ctx, "login orders get 3", "password", "RouteOrdersGetV3")
+	client, userID, err := suite.LoggedClient(ctx, "login orders get 3", "password", "RouteOrdersGetV3")
 	suite.Require().NoError(err)
 
-	userClaims := UserClaims{}
-	for _, c := range resp.Cookies() {
-		if c.Name == cookieTokenName {
-			userClaims, err = getUserClaimsFromToken(c.Value, suite.app.config.Secret)
-			suite.NoError(err)
-			break
-		}
-	}
-	suite.NotEqualValues(UserClaims{}, userClaims, "userClaims")
 	time1 := time.Now().Add(-1 * time.Hour)
 	time2 := time.Now()
 	// пропадают наносекунды при конвертировании, делаем так
@@ -385,13 +378,13 @@ func (suite *AppTestSuite) RouteOrdersGetV3(ctx context.Context) {
 	}
 	suite.
 		mockStorage.
-		On("Orders", mock.Anything, userClaims.UserID).
+		On("Orders", mock.Anything, userID).
 		Return(
 			vals,
 			nil,
 		)
 	result := model.ResponseOrders{}
-	resp, err = client.
+	resp, err := client.
 		R().SetContext(ctx).
 		SetResult(&result).
 		Get("/api/user/orders")
