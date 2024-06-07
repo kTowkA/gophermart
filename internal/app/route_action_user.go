@@ -160,15 +160,11 @@ func (a *AppServer) rOrdersGet(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// log.Println("ORDERS", orders)
-	// ordersB, err := json.Marshal(orders)
 	w.Header().Add("content-type", "application/json")
 	err = json.NewEncoder(w).Encode(orders)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	// w.Write(ordersB)
-	w.WriteHeader(http.StatusOK)
+	// w.WriteHeader(http.StatusOK)
 }

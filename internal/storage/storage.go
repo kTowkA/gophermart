@@ -31,6 +31,8 @@ type StorageUser interface {
 	// Orders возвращает все заказы для пользователя userID
 	// при отсутствии заказов возвращает ErrOrdersNotFound
 	Orders(ctx context.Context, userID uuid.UUID) (model.ResponseOrders, error)
+	// Balance возвращает информацию о балансе пользователя с id userID
+	Balance(ctx context.Context, userID uuid.UUID) (model.ResponseBalance, error)
 	// Close закрывает соединение с хранилищем
 	Close(ctx context.Context) error
 }

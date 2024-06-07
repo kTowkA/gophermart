@@ -402,6 +402,43 @@ func (suite *AppTestSuite) TestRouteOrdersGet() {
 	suite.RouteOrdersGetV2(ctx)
 	suite.RouteOrdersGetV3(ctx)
 }
+
+func (suite *AppTestSuite) TestBalance() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	// OK
+	client, userID, err := suite.LoggedClient(ctx, "login-balance", "test", "TestBalance")
+	suite.Require().NoError(err)
+	balance := model.ResponseBalance{
+		Current:   44,
+		Withdrawn: 55,
+	}
+	suite.mockStorage.On("Balance", mock.Anything, userID).Return(balance, nil)
+	result := model.ResponseBalance{}
+	resp, err := client.R().SetContext(ctx).
+		SetResult(&result).
+		Get("/api/user/balance")
+	suite.NoError(err)
+	suite.EqualValues(http.StatusOK, resp.StatusCode())
+	suite.EqualValues(balance, result)
+
+	// Internal error
+	client2, userID, err := suite.LoggedClient(ctx, "login-balance-2", "test", "TestBalance")
+	suite.Require().NoError(err)
+	balance = model.ResponseBalance{
+		Current:   44,
+		Withdrawn: 55,
+	}
+	suite.mockStorage.On("Balance", mock.Anything, userID).Return(balance, errors.New("balance error"))
+	result = model.ResponseBalance{}
+	resp, err = client2.R().SetContext(ctx).
+		SetResult(&result).
+		Get("/api/user/balance")
+	suite.NoError(err)
+	suite.EqualValues(http.StatusInternalServerError, resp.StatusCode())
+	suite.EqualValues(model.ResponseBalance{}, result)
+
+}
 func TestExampleTestSuite(t *testing.T) {
 	suite.Run(t, new(AppTestSuite))
 }

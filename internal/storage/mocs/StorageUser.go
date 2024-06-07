@@ -16,6 +16,34 @@ type StorageUser struct {
 	mock.Mock
 }
 
+// Balance provides a mock function with given fields: ctx, userID
+func (_m *StorageUser) Balance(ctx context.Context, userID uuid.UUID) (model.ResponseBalance, error) {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Balance")
+	}
+
+	var r0 model.ResponseBalance
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (model.ResponseBalance, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) model.ResponseBalance); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(model.ResponseBalance)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Close provides a mock function with given fields: ctx
 func (_m *StorageUser) Close(ctx context.Context) error {
 	ret := _m.Called(ctx)

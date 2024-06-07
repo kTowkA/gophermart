@@ -33,7 +33,7 @@ func (a *AppServer) Start(ctx context.Context) error {
 		r.Post("/orders", a.rOrdersPost)
 		r.Get("/orders", a.rOrdersGet)
 		r.Route("/balance", func(r chi.Router) {
-			r.Get("/", nil)
+			r.Get("/", a.rBalance)
 			r.Post("/withdraw", nil)
 		})
 		r.Get("/withdrawals", nil)
