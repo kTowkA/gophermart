@@ -81,7 +81,7 @@ func (l *Log) Close() error {
 		return l.file.Close()
 	}
 	if l.zl != nil {
-		l.zl.Sync()
+		_ = l.zl.Sync()
 	}
 	return nil
 }
