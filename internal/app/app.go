@@ -3,30 +3,33 @@ package app
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kTowkA/gophermart/internal/config"
+	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/storage"
 )
 
 type AppServer struct {
 	storage storage.Storage
 	config  config.Config
+	log     *slog.Logger
 }
 
-func NewAppServer(cfg config.Config, storage storage.Storage) (*AppServer, error) {
+func NewAppServer(cfg config.Config, storage storage.Storage, log *logger.Log) (*AppServer, error) {
 	app := AppServer{
 		config:  cfg,
 		storage: storage,
+		log:     log.WithGroup("application"),
 	}
 	return &app, nil
 }
 
 func (a *AppServer) Start(ctx context.Context) error {
 	r := chi.NewRouter()
-	// r.Use(middleware.AllowContentType("application/json"), a.checkOnlyAuthUser)
-	r.Use(checkPOSTBody, a.checkOnlyAuthUser)
+	r.Use(middlewarePostBody, a.middlewareAuthUser, a.middlewareLog)
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", a.rRegister)
 		r.Post("/login", a.rLogin)

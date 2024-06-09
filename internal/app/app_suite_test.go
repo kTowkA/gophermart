@@ -12,6 +12,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
 	"github.com/kTowkA/gophermart/internal/config"
+	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
 	mocks "github.com/kTowkA/gophermart/internal/storage/mocs"
@@ -37,10 +38,12 @@ type AppTestSuite struct {
 }
 
 func (suite *AppTestSuite) SetupSuite() {
+	mlog, err := logger.New()
+	suite.Require().NoError(err)
 	mockStorage := new(mocks.Storage)
 	app, err := NewAppServer(config.Config{
 		AddressApp: fmt.Sprintf(":%d", port),
-	}, mockStorage)
+	}, mockStorage, mlog)
 	suite.Require().NoError(err)
 	suite.app = app
 	suite.mockStorage = mockStorage

@@ -1,3 +1,4 @@
+// в этом файле содержаться функции относящиеся к созданию jwt токена, его проверки и парсингу
 package app
 
 import (
@@ -8,14 +9,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// cookieTokenName название ключа с токеном в куках
 var cookieTokenName = "app_token"
 
 // Claims — структура утверждений, которая включает стандартные утверждения и
-// одно пользовательское UserID
+// одно пользовательские UserClaims
 type Claims struct {
 	jwt.RegisteredClaims
 	UserClaims
 }
+
+// UserClaims дополнительные утверждения
 type UserClaims struct {
 	UserID uuid.UUID
 	Login  string

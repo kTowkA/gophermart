@@ -10,7 +10,7 @@ import (
 )
 
 func (a *AppServer) rBalance(w http.ResponseWriter, r *http.Request) {
-	uc, ok := (r.Context().Value(userClaims("claims"))).(UserClaims)
+	uc, ok := (r.Context().Value(userClaims{})).(UserClaims)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -45,7 +45,7 @@ func (a *AppServer) rWithdraw(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	uc, ok := (r.Context().Value(userClaims("claims"))).(UserClaims)
+	uc, ok := (r.Context().Value(userClaims{})).(UserClaims)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -62,7 +62,7 @@ func (a *AppServer) rWithdraw(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 func (a *AppServer) rWithdrawals(w http.ResponseWriter, r *http.Request) {
-	uc, ok := (r.Context().Value(userClaims("claims"))).(UserClaims)
+	uc, ok := (r.Context().Value(userClaims{})).(UserClaims)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
