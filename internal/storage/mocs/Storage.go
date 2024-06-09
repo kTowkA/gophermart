@@ -120,17 +120,17 @@ func (_m *Storage) Orders(ctx context.Context, userID uuid.UUID) (model.Response
 	return r0, r1
 }
 
-// SaveOrder provides a mock function with given fields: ctx, userID, order
-func (_m *Storage) SaveOrder(ctx context.Context, userID uuid.UUID, order int64) error {
-	ret := _m.Called(ctx, userID, order)
+// SaveOrder provides a mock function with given fields: ctx, userID, orderNum
+func (_m *Storage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) error {
+	ret := _m.Called(ctx, userID, orderNum)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveOrder")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int64) error); ok {
-		r0 = rf(ctx, userID, order)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, model.OrderNumber) error); ok {
+		r0 = rf(ctx, userID, orderNum)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -196,6 +196,24 @@ func (_m *Storage) UserID(ctx context.Context, login string) (uuid.UUID, error) 
 	}
 
 	return r0, r1
+}
+
+// Withdraw provides a mock function with given fields: ctx, userID, requestWithdraw
+func (_m *Storage) Withdraw(ctx context.Context, userID uuid.UUID, requestWithdraw model.RequestWithdraw) error {
+	ret := _m.Called(ctx, userID, requestWithdraw)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Withdraw")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, model.RequestWithdraw) error); ok {
+		r0 = rf(ctx, userID, requestWithdraw)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Withdrawals provides a mock function with given fields: ctx, userID

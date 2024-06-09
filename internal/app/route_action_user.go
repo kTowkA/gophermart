@@ -122,7 +122,7 @@ func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	order, ok := validLuhnNumber(string(orderBytes))
+	_, ok := validLuhnNumber(string(orderBytes))
 	if !ok {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
@@ -132,7 +132,7 @@ func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = a.storage.SaveOrder(r.Context(), uc.UserID, order)
+	err = a.storage.SaveOrder(r.Context(), uc.UserID, model.OrderNumber(orderBytes))
 	switch {
 	case errors.Is(err, storage.ErrOrderWasAlreadyUpload):
 		w.WriteHeader(http.StatusOK)

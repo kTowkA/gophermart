@@ -237,9 +237,9 @@ func (suite *AppTestSuite) TestRouteOrdersPost() {
 	client, _, err := suite.LoggedClient(ctx, "login orders post", "password", "TestRouteOrdersPost")
 	suite.Require().NoError(err)
 
-	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, int64(49927398716)).Return(nil)
-	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, int64(5062821234567892)).Return(storage.ErrOrderWasAlreadyUpload)
-	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, int64(1234561239)).Return(storage.ErrOrderWasUploadByAnotherUser)
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("49927398716")).Return(nil)
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("5062821234567892")).Return(storage.ErrOrderWasAlreadyUpload)
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("1234561239")).Return(storage.ErrOrderWasUploadByAnotherUser)
 	tests := []Test{
 		{
 			name:           "ошибочный контент-тайп",
@@ -437,6 +437,73 @@ func (suite *AppTestSuite) TestBalance() {
 	suite.NoError(err)
 	suite.EqualValues(http.StatusInternalServerError, resp.StatusCode())
 	suite.EqualValues(model.ResponseBalance{}, result)
+}
+func (suite *AppTestSuite) TestWithdraw() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, userID, err := suite.LoggedClient(ctx, "login-withdraw", "test", "TestWithdraw")
+	suite.Require().NoError(err)
+	reqNotEnough := model.RequestWithdraw{
+		OrderNumber: "49927398716",
+		Sum:         1111.11,
+	}
+	reqErr := model.RequestWithdraw{
+		OrderNumber: "49927398716",
+		Sum:         666.666,
+	}
+	reqOK := model.RequestWithdraw{
+		OrderNumber: "49927398716",
+		Sum:         111.11,
+	}
+	suite.mockStorage.On("Withdraw", mock.Anything, userID, reqNotEnough).Return(storage.ErrWithdrawNotEnough)
+	suite.mockStorage.On("Withdraw", mock.Anything, userID, reqErr).Return(errors.New("withdraw error"))
+	suite.mockStorage.On("Withdraw", mock.Anything, userID, reqOK).Return(nil)
+	tests := []Test{
+		{
+			name:           "неверный content-type",
+			contentType:    "application/xml",
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name:           "ошибочное тело запроса",
+			contentType:    "application/json",
+			wantStatusCode: http.StatusBadRequest,
+			body:           `{"order":123,"sum":123.123}`,
+		},
+		{
+			name:           "неверный номер запроса",
+			contentType:    "application/json",
+			wantStatusCode: http.StatusUnprocessableEntity,
+			body:           `{"order":"123","sum":123.123}`,
+		},
+		{
+			name:           "недостаточно средств на балансе",
+			contentType:    "application/json",
+			wantStatusCode: http.StatusPaymentRequired,
+			body:           reqNotEnough,
+		},
+		{
+			name:           "ошщибка в сторадже",
+			contentType:    "application/json",
+			wantStatusCode: http.StatusInternalServerError,
+			body:           reqErr,
+		},
+		{
+			name:           "все хорошо",
+			contentType:    "application/json",
+			wantStatusCode: http.StatusOK,
+			body:           reqOK,
+		},
+	}
+
+	for _, t := range tests {
+		resp, err := client.R().
+			SetBody(t.body).
+			SetHeader("content-type", t.contentType).
+			Post("/api/user/balance/withdraw")
+		suite.NoError(err, t.name)
+		suite.EqualValues(t.wantStatusCode, resp.StatusCode())
+	}
 }
 func (suite *AppTestSuite) TestWithdrawals() {
 	ctxMain, cancelMain := context.WithTimeout(context.Background(), 10*time.Second)

@@ -9,4 +9,5 @@ var (
 	ErrOrderWasAlreadyUpload       = errors.New("заказ уже был загружен пользователем")
 	ErrOrdersNotFound              = errors.New("пользователь еще не создал ни одного заказа")
 	ErrWithdrawalsNotFound         = errors.New("пользователь еще не производил списания")
+	ErrWithdrawNotEnough           = errors.New("пользователю не хватает средств для списания")
 )

@@ -24,10 +24,10 @@ type StorageUser interface {
 	// HashPassword по переданному id пользователя userID возвращает хранящийся хеш пароля из хранилища для сравнения.
 	// Если по такому id не находит пользователя, то возвращает ErrUserNotFound
 	HashPassword(ctx context.Context, userID uuid.UUID) (string, error)
-	// SaveOrder сохраняет заказ order в системе, привязывая его к пользователю userID
+	// SaveOrder сохраняет заказ orderNum в системе, привязывая его к пользователю userID
 	// может вернуть ErrOrderWasUploadByAnotherUser если другой пользователь уже загрузил заказ с таким номером
 	// или ErrOrderWasAlreadyUpload если пользователь уже сохранял заказ order
-	SaveOrder(ctx context.Context, userID uuid.UUID, order int64) error
+	SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) error
 	// Orders возвращает все заказы для пользователя userID
 	// при отсутствии заказов возвращает ErrOrdersNotFound
 	Orders(ctx context.Context, userID uuid.UUID) (model.ResponseOrders, error)
@@ -36,6 +36,9 @@ type StorageUser interface {
 	// Withdrawals возвращает информацию о списаниях пользователя
 	// при отсутсвии истории списания возвращает ErrWithdrawalsNotFound
 	Withdrawals(ctx context.Context, userID uuid.UUID) (model.ResponseWithdrawals, error)
+	// Withdraw списывает баллы (RequestWithdraw.Sum) с накопительного счета на заказ requestWithdraw.OrderNumber
+	// при нехватке средств на балансе возвращает ErrWithdrawNotEnough
+	Withdraw(ctx context.Context, userID uuid.UUID, requestWithdraw model.RequestWithdraw) error
 	// Close закрывает соединение с хранилищем
 	Close(ctx context.Context) error
 }

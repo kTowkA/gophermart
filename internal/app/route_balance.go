@@ -40,29 +40,27 @@ func (a *AppServer) rWithdraw(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// order, ok := validLuhnNumber(strconv.FormatInt(int64(req.OrderNumber), 10))
-	// if !ok {
-	// 	w.WriteHeader(http.StatusUnprocessableEntity)
-	// 	return
-	// }
-	// uc, ok := (r.Context().Value(userClaims("claims"))).(UserClaims)
-	// if !ok {
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-	// err = a.storage.SaveOrder(r.Context(), uc.UserID, order)
-	// switch {
-	// case errors.Is(err, storage.ErrOrderWasAlreadyUpload):
-	// 	w.WriteHeader(http.StatusOK)
-	// case errors.Is(err, storage.ErrOrderWasUploadByAnotherUser):
-	// 	w.WriteHeader(http.StatusConflict)
-	// case err != nil:
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// default:
-	// 	w.WriteHeader(http.StatusCreated)
-	// }
+	_, ok := validLuhnNumber(string(req.OrderNumber))
+	if !ok {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	uc, ok := (r.Context().Value(userClaims("claims"))).(UserClaims)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = a.storage.Withdraw(r.Context(), uc.UserID, req)
+	if errors.Is(err, storage.ErrWithdrawNotEnough) {
+		w.WriteHeader(http.StatusPaymentRequired)
+		return
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
-
 func (a *AppServer) rWithdrawals(w http.ResponseWriter, r *http.Request) {
 	uc, ok := (r.Context().Value(userClaims("claims"))).(UserClaims)
 	if !ok {
