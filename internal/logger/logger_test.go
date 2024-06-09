@@ -8,7 +8,11 @@ import (
 )
 
 func TestLogger(t *testing.T) {
-	l, err := New(WithLevel(slog.LevelError), WithTextMode())
+	l, err := New()
+	require.NoError(t, err)
+	err = l.Close()
+	require.NoError(t, err)
+	l, err = New(WithLevel(slog.LevelError), WithTextMode())
 	require.NoError(t, err)
 	err = l.Close()
 	require.NoError(t, err)
