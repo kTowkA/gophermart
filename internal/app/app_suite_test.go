@@ -365,12 +365,12 @@ func (suite *AppTestSuite) RouteOrdersGetV3(ctx context.Context) {
 
 	vals := model.ResponseOrders{
 		{
-			OrderNumber: 1,
+			OrderNumber: "1",
 			Status:      model.StatusNew,
 			UploadedAt:  time1,
 		},
 		{
-			OrderNumber: 2,
+			OrderNumber: "2",
 			Status:      model.StatusProcessed,
 			Accrual:     100,
 			UploadedAt:  time2,
@@ -437,7 +437,69 @@ func (suite *AppTestSuite) TestBalance() {
 	suite.NoError(err)
 	suite.EqualValues(http.StatusInternalServerError, resp.StatusCode())
 	suite.EqualValues(model.ResponseBalance{}, result)
+}
+func (suite *AppTestSuite) TestWithdrawals() {
+	ctxMain, cancelMain := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelMain()
+	ctx200, cancel200 := context.WithCancel(ctxMain)
+	defer cancel200()
+	ctx204, cancel204 := context.WithCancel(ctxMain)
+	defer cancel204()
+	ctx500, cancel500 := context.WithCancel(ctxMain)
+	defer cancel500()
+	// OK 200
+	client, userID, err := suite.LoggedClient(ctx200, "login-withdrawals-200", "test", "TestWithdrawals")
+	suite.Require().NoError(err)
+	time1 := time.Now().Add(-1 * time.Hour)
+	time2 := time.Now().Add(-2 * time.Hour)
+	// пропадают наносекунды при конвертировании, делаем так
+	timeRFC3339 := time1.Format(time.RFC3339)
+	time1, _ = time.Parse(time.RFC3339, timeRFC3339)
+	timeRFC3339 = time2.Format(time.RFC3339)
+	time2, _ = time.Parse(time.RFC3339, timeRFC3339)
+	returnValue := model.ResponseWithdrawals{
+		{
+			OrderNumber: "111",
+			Sum:         111.11,
+			ProcessedAt: time1,
+		},
+		{
+			OrderNumber: "222",
+			Sum:         222.22,
+			ProcessedAt: time2,
+		},
+	}
+	suite.mockStorage.On("Withdrawals", mock.Anything, userID).Return(returnValue, nil)
+	result := model.ResponseWithdrawals{}
+	resp, err := client.R().SetContext(ctx200).
+		SetResult(&result).
+		Get("/api/user/withdrawals")
+	suite.NoError(err)
+	suite.EqualValues(http.StatusOK, resp.StatusCode())
+	suite.EqualValues(returnValue, result)
 
+	// no content 204
+	client, userID, err = suite.LoggedClient(ctx204, "login-withdrawals-204", "test", "TestWithdrawals")
+	suite.Require().NoError(err)
+	suite.mockStorage.On("Withdrawals", mock.Anything, userID).Return(nil, storage.ErrWithdrawalsNotFound)
+	result = model.ResponseWithdrawals{}
+	resp, err = client.R().SetContext(ctx204).
+		SetResult(&result).
+		Get("/api/user/withdrawals")
+	suite.NoError(err)
+	suite.EqualValues(http.StatusNoContent, resp.StatusCode())
+	suite.EqualValues(model.ResponseWithdrawals{}, result)
+	// internal error 500
+	client, userID, err = suite.LoggedClient(ctx500, "login-withdrawals-500", "test", "TestWithdrawals")
+	suite.Require().NoError(err)
+	suite.mockStorage.On("Withdrawals", mock.Anything, userID).Return(nil, errors.New("withdrawals error"))
+	result = model.ResponseWithdrawals{}
+	resp, err = client.R().SetContext(ctx500).
+		SetResult(&result).
+		Get("/api/user/withdrawals")
+	suite.NoError(err)
+	suite.EqualValues(http.StatusInternalServerError, resp.StatusCode())
+	suite.EqualValues(model.ResponseWithdrawals{}, result)
 }
 func TestExampleTestSuite(t *testing.T) {
 	suite.Run(t, new(AppTestSuite))

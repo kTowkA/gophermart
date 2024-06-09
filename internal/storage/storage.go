@@ -33,6 +33,9 @@ type StorageUser interface {
 	Orders(ctx context.Context, userID uuid.UUID) (model.ResponseOrders, error)
 	// Balance возвращает информацию о балансе пользователя с id userID
 	Balance(ctx context.Context, userID uuid.UUID) (model.ResponseBalance, error)
+	// Withdrawals возвращает информацию о списаниях пользователя
+	// при отсутсвии истории списания возвращает ErrWithdrawalsNotFound
+	Withdrawals(ctx context.Context, userID uuid.UUID) (model.ResponseWithdrawals, error)
 	// Close закрывает соединение с хранилищем
 	Close(ctx context.Context) error
 }

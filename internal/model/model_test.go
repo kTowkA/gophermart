@@ -11,7 +11,7 @@ import (
 func TestMarshalResponseOrder(t *testing.T) {
 	t1 := time.Now()
 	val := ResponseOrder{
-		OrderNumber: 12345,
+		OrderNumber: "12345",
 		Status:      StatusNew,
 		Accrual:     11.1,
 		UploadedAt:  t1,

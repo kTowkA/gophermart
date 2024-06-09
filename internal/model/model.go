@@ -12,7 +12,7 @@ type RequestLogin struct {
 	Password string `json:"password"`
 }
 
-type OrderNumber int64
+type OrderNumber string
 
 type ResponseOrder struct {
 	OrderNumber OrderNumber `json:"number"`

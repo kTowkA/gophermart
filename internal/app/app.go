@@ -34,9 +34,9 @@ func (a *AppServer) Start(ctx context.Context) error {
 		r.Get("/orders", a.rOrdersGet)
 		r.Route("/balance", func(r chi.Router) {
 			r.Get("/", a.rBalance)
-			r.Post("/withdraw", nil)
+			r.Post("/withdraw", a.rWithdraw)
 		})
-		r.Get("/withdrawals", nil)
+		r.Get("/withdrawals", a.rWithdrawals)
 	})
 	if err := http.ListenAndServe(a.config.AddressApp, r); err != nil {
 		return fmt.Errorf("запуск сервера. %w", err)
