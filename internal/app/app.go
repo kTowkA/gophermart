@@ -2,29 +2,31 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/storage"
+	"golang.org/x/sync/errgroup"
 )
 
 type AppServer struct {
 	storage storage.Storage
 	config  config.Config
 	log     *slog.Logger
+	server  *http.Server
 }
 
-func NewAppServer(cfg config.Config, storage storage.Storage, log *logger.Log) (*AppServer, error) {
+func NewAppServer(cfg config.Config, storage storage.Storage, log *logger.Log) *AppServer {
 	app := AppServer{
 		config:  cfg,
 		storage: storage,
 		log:     log.WithGroup("application"),
 	}
-	return &app, nil
+	return &app
 }
 
 func (a *AppServer) Start(ctx context.Context) error {
@@ -41,8 +43,29 @@ func (a *AppServer) Start(ctx context.Context) error {
 		})
 		r.Get("/withdrawals", a.rWithdrawals)
 	})
-	if err := http.ListenAndServe(a.config.AddressApp, r); err != nil {
-		return fmt.Errorf("запуск сервера. %w", err)
+
+	a.server = &http.Server{
+		Addr:    a.config.AddressApp,
+		Handler: r,
+	}
+
+	gr, gCtx := errgroup.WithContext(ctx)
+	gr.Go(func() error {
+		return a.server.ListenAndServe()
+	})
+	gr.Go(func() error {
+		<-gCtx.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return a.server.Shutdown(ctx)
+	})
+	gr.Go(func() error {
+		a.updaterStatus(ctx)
+		return nil
+	})
+	err := gr.Wait()
+	if err != nil {
+		a.log.Error("сервер", slog.String("ошибка", err.Error()))
 	}
 	return nil
 }

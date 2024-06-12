@@ -39,6 +39,16 @@ type StorageUser interface {
 	// Withdraw списывает баллы (RequestWithdraw.Sum) с накопительного счета на заказ requestWithdraw.OrderNumber
 	// при нехватке средств на балансе возвращает ErrWithdrawNotEnough
 	Withdraw(ctx context.Context, userID uuid.UUID, requestWithdraw model.RequestWithdraw) error
+	// OrdersByStatuses получает список из заказов у которых статус входит в заданную группу статусов statuses
+	// при отсутствии подходящих статусов возвращает ErrOrdersNotFound
+	// для пагинации служат limit - максимальное количество данных для возврата и offset - смещение относительно начала подходящей выборке
+	OrdersByStatuses(ctx context.Context, statuses []string, limit, offset int) (model.ResponseOrders, error)
+	// UpdateOrders обновляет информацию о заказе info
+	// возвращает ErrNothingHasBeenDone если данные в репозитории уже актальны
+	// при отсутсвии заказов с переданным номером возвращает ErrOrdersNotFound
+	UpdateOrder(ctx context.Context, info model.ResponseAccuralSystem) error
+	// UpdateOrders обновляет информацию о группе заказов info
+	UpdateOrders(ctx context.Context, info []model.ResponseAccuralSystem) (int, error)
 	// Close закрывает соединение с хранилищем
 	Close(ctx context.Context) error
 }

@@ -12,6 +12,7 @@ require (
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.2.0
 	golang.org/x/crypto v0.23.0
+	golang.org/x/sync v0.1.0
 )
 
 require (

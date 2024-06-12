@@ -120,6 +120,36 @@ func (_m *StorageUser) Orders(ctx context.Context, userID uuid.UUID) (model.Resp
 	return r0, r1
 }
 
+// OrdersByStatuses provides a mock function with given fields: ctx, statuses, limit, offset
+func (_m *StorageUser) OrdersByStatuses(ctx context.Context, statuses []string, limit int, offset int) (model.ResponseOrders, error) {
+	ret := _m.Called(ctx, statuses, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for OrdersByStatuses")
+	}
+
+	var r0 model.ResponseOrders
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, []string, int, int) (model.ResponseOrders, error)); ok {
+		return rf(ctx, statuses, limit, offset)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []string, int, int) model.ResponseOrders); ok {
+		r0 = rf(ctx, statuses, limit, offset)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(model.ResponseOrders)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []string, int, int) error); ok {
+		r1 = rf(ctx, statuses, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SaveOrder provides a mock function with given fields: ctx, userID, orderNum
 func (_m *StorageUser) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) error {
 	ret := _m.Called(ctx, userID, orderNum)
@@ -161,6 +191,52 @@ func (_m *StorageUser) SaveUser(ctx context.Context, login string, hashPassword 
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
 		r1 = rf(ctx, login, hashPassword)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateOrder provides a mock function with given fields: ctx, info
+func (_m *StorageUser) UpdateOrder(ctx context.Context, info model.ResponseAccuralSystem) error {
+	ret := _m.Called(ctx, info)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateOrder")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, model.ResponseAccuralSystem) error); ok {
+		r0 = rf(ctx, info)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateOrders provides a mock function with given fields: ctx, info
+func (_m *StorageUser) UpdateOrders(ctx context.Context, info []model.ResponseAccuralSystem) (int, error) {
+	ret := _m.Called(ctx, info)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateOrders")
+	}
+
+	var r0 int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, []model.ResponseAccuralSystem) (int, error)); ok {
+		return rf(ctx, info)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []model.ResponseAccuralSystem) int); ok {
+		r0 = rf(ctx, info)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []model.ResponseAccuralSystem) error); ok {
+		r1 = rf(ctx, info)
 	} else {
 		r1 = ret.Error(1)
 	}
