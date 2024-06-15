@@ -1,3 +1,6 @@
+//go:build integrations
+// +build integrations
+
 package postgres
 
 import (
@@ -180,6 +183,48 @@ func (suite *PStorageTestSuite) TestOrders() {
 	orders, err := suite.pstorage.Orders(ctx, userID)
 	suite.NoError(err)
 	suite.Len(orders, 2)
+}
+
+func (suite *PStorageTestSuite) TestBalance() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, _, userID := suite.generateUser()
+
+	// проверяем что на счете у пользователя ничего нет
+	balance, err := suite.pstorage.Balance(ctx, userID)
+	suite.NoError(err)
+	suite.EqualValues(model.ResponseBalance{}, balance)
+	// пытаемся снять баллы
+	err = suite.pstorage.Withdraw(ctx, userID, model.RequestWithdraw{OrderNumber: model.OrderNumber("1"), Sum: 999})
+	suite.ErrorIs(err, storage.ErrWithdrawNotEnough)
+	// смотрим что списаний не было
+	_, err = suite.pstorage.Withdrawals(ctx, userID)
+	suite.ErrorIs(err, storage.ErrWithdrawalsNotFound)
+	// делаем 2 новых заказа
+	err = suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("eee"))
+	suite.NoError(err)
+	err = suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("ddd"))
+	suite.NoError(err)
+	// делаем пополнения созданных заказов
+	err = suite.pstorage.UpdateOrder(ctx, model.ResponseAccuralSystem{OrderNumber: "eee", Status: storage.StatusProcessed, Accrual: 400})
+	suite.NoError(err)
+	err = suite.pstorage.UpdateOrder(ctx, model.ResponseAccuralSystem{OrderNumber: "ddd", Status: storage.StatusProcessed, Accrual: 500})
+	suite.NoError(err)
+	// смотрим баланс
+	balance, err = suite.pstorage.Balance(ctx, userID)
+	suite.NoError(err)
+	suite.EqualValues(model.ResponseBalance{Current: 400 + 500, Withdrawn: 0}, balance)
+	// пытаемся снять баллы
+	err = suite.pstorage.Withdraw(ctx, userID, model.RequestWithdraw{OrderNumber: model.OrderNumber("1"), Sum: 333})
+	suite.NoError(err)
+	err = suite.pstorage.Withdraw(ctx, userID, model.RequestWithdraw{OrderNumber: model.OrderNumber("2"), Sum: 444})
+	suite.NoError(err)
+	err = suite.pstorage.Withdraw(ctx, userID, model.RequestWithdraw{OrderNumber: model.OrderNumber("3"), Sum: 555})
+	suite.ErrorIs(err, storage.ErrWithdrawNotEnough)
+	// получаем списания
+	withdrawals, err := suite.pstorage.Withdrawals(ctx, userID)
+	suite.NoError(err)
+	suite.Len(withdrawals, 2)
 }
 func TestExampleTestSuite(t *testing.T) {
 	suite.Run(t, new(PStorageTestSuite))

@@ -136,7 +136,7 @@ func (p *PStorage) UpdateOrder(ctx context.Context, info model.ResponseAccuralSy
 		orderID  uuid.UUID
 		statusID int
 	)
-	err := p.QueryRow(ctx, "SELECT order_id,status_id FROM orders WHERE orred_num=$1", info.OrderNumber).Scan(&orderID, &statusID)
+	err := p.QueryRow(ctx, "SELECT order_id,status_id FROM orders WHERE order_num=$1", info.OrderNumber).Scan(&orderID, &statusID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		p.Warn("поиск ID заказа по переданному номеру. заказа с таким номером нет", slog.String("номер заказа", string(info.OrderNumber)))
 		return storage.ErrOrdersNotFound
