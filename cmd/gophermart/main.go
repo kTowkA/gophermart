@@ -2,16 +2,20 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
+	"time"
 
 	"github.com/kTowkA/gophermart/internal/app"
 	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/storage/postgres"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -20,29 +24,83 @@ func main() {
 		log.Fatal(err)
 	}
 	defer logger.Close()
-	log.Println("логгер установлен")
-	logger.Info("логгер установлен")
+
+	// корневой контекст приложения
+	rootCtx, cancelCtx := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancelCtx()
+
+	g, ctx := errgroup.WithContext(rootCtx)
+
+	// нештатное завершение программы по таймауту
+	// происходит, если после завершения контекста
+	// приложение не смогло завершиться за отведенный промежуток времени
+	context.AfterFunc(ctx, func() {
+		ctx, cancelCtx := context.WithTimeout(context.Background(), 1*time.Minute)
+		defer cancelCtx()
+
+		<-ctx.Done()
+		log.Fatal("failed to gracefully shutdown the service")
+	})
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		logger.Error("чтение конфигурационного файла", slog.String("ошибка", err.Error()))
 		return
 	}
-	log.Println("конфигурация прочитана", cfg)
-	logger.Info("конфигурация прочитана")
+
 	logger.Debug("конфигурация", slog.String("Address App", cfg.AddressApp), slog.String("Database URI", cfg.DatabaseURI), slog.String("Accural System Address", cfg.AccuralSystemAddress))
-	pstorage, err := postgres.New(context.Background(), cfg.DatabaseURI, logger)
+
+	// открытие соединения – относительно долгая, io-bound операция
+	// она использует контекст
+	pstorage, err := postgres.New(ctx, cfg.DatabaseURI, logger)
 	if err != nil {
 		logger.Error("создание хранилища", slog.String("DatabaseURI", cfg.DatabaseURI), slog.String("ошибка", err.Error()))
 		return
 	}
-	log.Println("хранилища создано")
-	logger.Info("хранилища создано")
+
+	// отслеживаем успешное закрытие соединения с БД
+	g.Go(func() error {
+		defer log.Print("closed DB")
+
+		<-ctx.Done()
+
+		pstorage.Close(context.Background())
+		return nil
+	})
+
 	myapp := app.NewAppServer(cfg, pstorage, logger)
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-	err = myapp.Start(ctx)
-	if err != nil {
-		logger.Error("работа сервера", slog.String("ошибка", err.Error()))
-		return
+	// запуск сервера
+	g.Go(func() (err error) {
+		defer func() {
+			errRec := recover()
+			if errRec != nil {
+				err = fmt.Errorf("a panic occurred: %v", errRec)
+			}
+		}()
+		if err = myapp.Start(context.Background()); err != nil {
+			if errors.Is(err, http.ErrServerClosed) {
+				return
+			}
+			return fmt.Errorf("listen and server has failed: %w", err)
+		}
+		return nil
+	})
+
+	// отслеживаем успешное завершение работы сервера
+	g.Go(func() error {
+		defer log.Print("server has been shutdown")
+		<-ctx.Done()
+
+		shutdownTimeoutCtx, cancelShutdownTimeoutCtx := context.WithTimeout(context.Background(), 1*time.Minute)
+		defer cancelShutdownTimeoutCtx()
+		if err := myapp.Shutdown(shutdownTimeoutCtx); err != nil {
+			log.Printf("an error occurred during server shutdown: %v", err)
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		logger.Error("", slog.String("", err.Error()))
 	}
+
 }

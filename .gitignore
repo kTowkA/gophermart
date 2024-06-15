@@ -24,3 +24,5 @@ vendor/
 
 # my
 *.log
+internal/app/app_suite_2_test.go
+internal/fork/

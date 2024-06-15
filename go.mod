@@ -1,8 +1,11 @@
 module github.com/kTowkA/gophermart
 
-go 1.21.8
+go 1.22
+
+toolchain go1.22.4
 
 require (
+	github.com/Yandex-Practicum/go-autotests v0.10.11
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-resty/resty/v2 v2.13.1

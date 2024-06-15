@@ -4,13 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/storage"
-	"golang.org/x/sync/errgroup"
 )
 
 type AppServer struct {
@@ -48,24 +46,29 @@ func (a *AppServer) Start(ctx context.Context) error {
 		Addr:    a.config.AddressApp,
 		Handler: r,
 	}
+	return a.server.ListenAndServe()
+	// log.Println("!!!", a.server.ListenAndServe())
+	// gr, gCtx := errgroup.WithContext(ctx)
+	// gr.Go(func() error {
+	// 	return a.server.ListenAndServe()
+	// })
+	// gr.Go(func() error {
+	// 	<-gCtx.Done()
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// 	defer cancel()
+	// 	return a.server.Shutdown(ctx)
+	// })
+	// gr.Go(func() error {
+	// 	a.updaterStatus(ctx)
+	// 	return nil
+	// })
+	// err := gr.Wait()
+	// if err != nil {
+	// 	a.log.Error("сервер", slog.String("ошибка", err.Error()))
+	// }
+	// return nil
+}
 
-	gr, gCtx := errgroup.WithContext(ctx)
-	gr.Go(func() error {
-		return a.server.ListenAndServe()
-	})
-	gr.Go(func() error {
-		<-gCtx.Done()
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		return a.server.Shutdown(ctx)
-	})
-	gr.Go(func() error {
-		a.updaterStatus(ctx)
-		return nil
-	})
-	err := gr.Wait()
-	if err != nil {
-		a.log.Error("сервер", slog.String("ошибка", err.Error()))
-	}
-	return nil
+func (a *AppServer) Shutdown(ctx context.Context) error {
+	return a.server.Shutdown(ctx)
 }
