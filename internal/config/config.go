@@ -48,5 +48,5 @@ func LoadConfig() (Config, error) {
 	if cfg.Secret == "" {
 		cfg.Secret = secret
 	}
-	return Config{}, nil
+	return cfg, nil
 }
