@@ -41,10 +41,10 @@ func (suite *PStorageTestSuite) SetupSuite() {
 
 	var connString string
 	err = pool.Retry(func() error {
-		time.Sleep(3 * time.Second)
+		time.Sleep(5 * time.Second)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		connString = fmt.Sprintf("postgres://user:pass@localhost:%s/user?sslmode=disable", resource.GetPort("5432/tcp"))
+		connString = fmt.Sprintf("postgresql://user:pass@localhost:%s/user?sslmode=disable", resource.GetPort("5432/tcp"))
 		conn, err := pgx.Connect(ctx, connString)
 		suite.Require().NoError(err)
 		defer conn.Close(ctx)

@@ -58,7 +58,7 @@ func Migration(connString string) error {
 	if err != nil {
 		return fmt.Errorf("создание драйвера для считывания миграций. %w", err)
 	}
-	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(connString, "postgres", "pgx5", 1))
+	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(connString, "postgresql", "pgx5", 1))
 	if err != nil {
 		return fmt.Errorf("создание экземпляра миграций. %w", err)
 	}
