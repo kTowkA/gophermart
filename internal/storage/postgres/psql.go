@@ -11,6 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/model"
@@ -81,6 +82,15 @@ func (p *PStorage) SaveStatuses(ctx context.Context, statuses []*model.Status) e
 	}
 	for i := range statuses {
 		var statusID int
+		err = tx.QueryRow(ctx, "SELECT status_id FROM statuses WHERE value=$1", statuses[i].Value()).Scan(&statusID)
+		if err == nil {
+			statuses[i].SetKey(statusID)
+			continue
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			p.Error("получение статуса", slog.String("статус", statuses[i].Value()), slog.String("ошибка", err.Error()))
+			return tx.Rollback(ctx)
+		}
 		err = tx.QueryRow(
 			ctx,
 			"INSERT INTO statuses(value) VALUES($1) RETURNING status_id",

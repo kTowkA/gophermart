@@ -20,18 +20,23 @@ func main() {
 		log.Fatal(err)
 	}
 	defer logger.Close()
+	log.Println("логгер установлен")
+	logger.Info("логгер установлен")
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		logger.Error("чтение конфигурационного файла", slog.String("ошибка", err.Error()))
 		return
 	}
+	log.Println("конфигурация прочитана", cfg)
+	logger.Info("конфигурация прочитана")
 	logger.Debug("конфигурация", slog.String("Address App", cfg.AddressApp), slog.String("Database URI", cfg.DatabaseURI), slog.String("Accural System Address", cfg.AccuralSystemAddress))
 	pstorage, err := postgres.New(context.Background(), cfg.DatabaseURI, logger)
 	if err != nil {
 		logger.Error("создание хранилища", slog.String("DatabaseURI", cfg.DatabaseURI), slog.String("ошибка", err.Error()))
 		return
 	}
-
+	log.Println("хранилища создано")
+	logger.Info("хранилища создано")
 	myapp := app.NewAppServer(cfg, pstorage, logger)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
