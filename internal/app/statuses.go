@@ -152,12 +152,13 @@ func (a *AppServer) gettingOrders(ctx context.Context) chan model.ResponseOrder 
 			default:
 			}
 			orders, err := a.storage.OrdersByStatuses(ctx, wantSt, limit, offset)
+			a.log.Debug("получено заказов", slog.Any("статусы", wantSt), slog.Any("заказы", orders), slog.Int("лимит", limit), slog.Int("смещение", offset))
 			if errors.Is(err, storage.ErrOrdersNotFound) {
 				select {
 				case <-ctx.Done():
 					a.log.Debug("выход из gettingOrders")
 					return
-				case <-time.After(5 * time.Second):
+				case <-time.After(3 * time.Second):
 				}
 				offset = 0
 				continue
