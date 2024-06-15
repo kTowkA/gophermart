@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
@@ -14,7 +15,12 @@ import (
 )
 
 func main() {
-	panic(0)
+	defer func() {
+		errRec := recover()
+		if errRec != nil {
+			log.Println(fmt.Errorf("a panic occurred: %v", errRec))
+		}
+	}()
 	logger, err := logger.New(logger.WithLevel(slog.LevelDebug))
 	if err != nil {
 		// log.Fatal(err)

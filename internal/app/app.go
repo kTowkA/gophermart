@@ -69,6 +69,7 @@ func RunApp(ctx context.Context, cfg config.Config, log *logger.Log) error {
 		shutdownTimeoutCtx, cancelShutdownTimeoutCtx := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancelShutdownTimeoutCtx()
 		if err := app.server.Shutdown(shutdownTimeoutCtx); err != nil {
+			app.log.Error("остановка сервера", slog.String("ошибка", err.Error()))
 			// log.Printf("an error occurred during server shutdown: %v", err)
 		}
 		return nil
