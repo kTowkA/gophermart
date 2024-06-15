@@ -47,6 +47,10 @@ func RunApp(ctx context.Context, cfg config.Config, log *logger.Log) error {
 		defer app.storage.Close(context.Background())
 	}
 	group, ctxErr := errgroup.WithContext(ctx)
+	group.Go(func() error {
+		app.updaterStatus(ctx)
+		return nil
+	})
 	group.Go(func() (err error) {
 		defer func() {
 			errRec := recover()
