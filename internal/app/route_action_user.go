@@ -41,7 +41,7 @@ func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusAccepted)
 	}
 }
 func (a *AppServer) rOrdersGet(w http.ResponseWriter, r *http.Request) {

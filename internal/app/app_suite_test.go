@@ -287,7 +287,7 @@ func (suite *AppTestSuite) TestRouteOrdersPost() {
 			path:           "/api/user/orders",
 			method:         http.MethodPost,
 			contentType:    "text/plain",
-			wantStatusCode: http.StatusCreated,
+			wantStatusCode: http.StatusAccepted,
 			body:           "49927398716",
 		},
 		{
