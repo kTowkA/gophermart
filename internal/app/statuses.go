@@ -105,6 +105,7 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 				a.log.Debug("выход из gettingInfoFromAccuralSystem")
 				return
 			case o := <-orders:
+				a.log.Debug("получили заказ", slog.String("номер заказа", string(o.OrderNumber)), slog.String("статус", o.Status.Value()))
 				result := model.ResponseAccuralSystem{}
 				resp, err := req.SetContext(ctx).SetResult(&result).Get("/api/orders/" + string(o.OrderNumber))
 				if err != nil {
@@ -168,6 +169,7 @@ func (a *AppServer) gettingOrders(ctx context.Context) chan model.ResponseOrder 
 				continue
 			}
 			for _, o := range orders {
+				a.log.Debug("отправляем заказ", slog.String("номер заказа", string(o.OrderNumber)), slog.String("статус", o.Status.Value()))
 				ordersCh <- o
 			}
 			offset += limit
