@@ -42,7 +42,7 @@ type StorageUser interface {
 	// OrdersByStatuses получает список из заказов у которых статус входит в заданную группу статусов statuses
 	// при отсутствии подходящих статусов возвращает ErrOrdersNotFound
 	// для пагинации служат limit - максимальное количество данных для возврата и offset - смещение относительно начала подходящей выборке
-	OrdersByStatuses(ctx context.Context, statuses []string, limit, offset int) (model.ResponseOrders, error)
+	OrdersByStatuses(ctx context.Context, statuses []model.Status, limit, offset int) (model.ResponseOrders, error)
 	// UpdateOrders обновляет информацию о заказе info
 	// возвращает ErrNothingHasBeenDone если данные в репозитории уже актальны
 	// при отсутсвии заказов с переданным номером возвращает ErrOrdersNotFound

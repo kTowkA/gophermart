@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/kTowkA/gophermart/internal/logger"
+	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
@@ -109,6 +110,76 @@ func (suite *PStorageTestSuite) generateUser() (string, string, uuid.UUID) {
 	userID, err := suite.pstorage.SaveUser(ctx, login, hash)
 	suite.Require().NoError(err)
 	return login, hash, userID
+}
+
+func (suite *PStorageTestSuite) TestSaveOrder() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, _, userID := suite.generateUser()
+	err := suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("123"))
+	suite.NoError(err)
+	err = suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("123"))
+	suite.ErrorIs(err, storage.ErrOrderWasAlreadyUpload)
+	_, _, userID2 := suite.generateUser()
+	err = suite.pstorage.SaveOrder(ctx, userID2, model.OrderNumber("123"))
+	suite.ErrorIs(err, storage.ErrOrderWasUploadByAnotherUser)
+}
+
+func (suite *PStorageTestSuite) TestUpdateOrders() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, _, userID := suite.generateUser()
+
+	err := suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("111"))
+	suite.NoError(err)
+	err = suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("222"))
+	suite.NoError(err)
+	err = suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("333"))
+	suite.NoError(err)
+
+	_, err = suite.pstorage.UpdateOrders(ctx, []model.ResponseAccuralSystem{
+		{
+			OrderNumber: "222",
+			Status:      storage.StatusProcessed,
+			Accrual:     222.22,
+		},
+		{
+			OrderNumber: "333",
+			Status:      storage.StatusProcessing,
+			Accrual:     222.22,
+		},
+	})
+	suite.NoError(err)
+}
+
+func (suite *PStorageTestSuite) TestOrdersByStatuses() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := suite.pstorage.OrdersByStatuses(ctx, []model.Status{storage.StatusRegistered, storage.StatusInvalid}, 10, 0)
+	suite.ErrorIs(err, storage.ErrOrdersNotFound)
+	_, _, userID := suite.generateUser()
+	err = suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("qqq"))
+	suite.NoError(err)
+	new, err := suite.pstorage.OrdersByStatuses(ctx, []model.Status{storage.StatusNew}, 10, 0)
+	suite.NoError(err)
+	suite.Contains(new, model.ResponseOrder{OrderNumber: "qqq"})
+	_, err = suite.pstorage.OrdersByStatuses(ctx, []model.Status{storage.StatusNew}, 10, 999)
+	suite.ErrorIs(err, storage.ErrOrdersNotFound)
+}
+func (suite *PStorageTestSuite) TestOrders() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, _, userID := suite.generateUser()
+	_, err := suite.pstorage.Orders(ctx, userID)
+	suite.ErrorIs(err, storage.ErrOrdersNotFound)
+	err = suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("www"))
+	suite.NoError(err)
+	err = suite.pstorage.SaveOrder(ctx, userID, model.OrderNumber("sss"))
+	suite.NoError(err)
+	orders, err := suite.pstorage.Orders(ctx, userID)
+	suite.NoError(err)
+	suite.Len(orders, 2)
 }
 func TestExampleTestSuite(t *testing.T) {
 	suite.Run(t, new(PStorageTestSuite))

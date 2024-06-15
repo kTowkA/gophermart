@@ -48,7 +48,7 @@ func (suite *AppTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 	suite.app = app
 	suite.mockStorage = mockStorage
-	suite.mockStorage.On("OrdersByStatuses", mock.Anything, []string{StatusUndefined, StatusNew, StatusProcessing}, 100, 0).Return(nil, storage.ErrOrdersNotFound)
+	suite.mockStorage.On("OrdersByStatuses", mock.Anything, []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing}, 100, 0).Return(nil, storage.ErrOrdersNotFound)
 	ctx, cancel := context.WithCancel(context.Background())
 	suite.cancel = cancel
 	go func() {
@@ -377,12 +377,12 @@ func (suite *AppTestSuite) RouteOrdersGetV3(ctx context.Context) {
 	vals := model.ResponseOrders{
 		{
 			OrderNumber: "1",
-			Status:      model.StatusNew,
+			Status:      storage.StatusNew,
 			UploadedAt:  time1,
 		},
 		{
 			OrderNumber: "2",
-			Status:      model.StatusProcessed,
+			Status:      storage.StatusProcessed,
 			Accrual:     100,
 			UploadedAt:  time2,
 		},

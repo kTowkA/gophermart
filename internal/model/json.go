@@ -13,11 +13,13 @@ func (o ResponseOrder) MarshalJSON() ([]byte, error) {
 		ResponseOrderAlias
 		// переопределяем поля внутри анонимной структуры
 		UploadedAt string `json:"uploaded_at"`
+		Status     string `json:"status"`
 	}{
 		// встраиваем значение всех полей изначального объекта (embedding)
 		ResponseOrderAlias: ResponseOrderAlias(o),
 		// задаём значение для переопределённого поля
 		UploadedAt: o.UploadedAt.Format(time.RFC3339),
+		Status:     o.Status.Value(),
 	}
 
 	return json.Marshal(aliasValue) // вызываем стандартный Marshal
@@ -30,6 +32,7 @@ func (o *ResponseOrder) UnmarshalJSON(data []byte) (err error) {
 		*ResponseOrderAlias
 		// переопределяем поле внутри анонимной структуры
 		UploadedAt string `json:"uploaded_at"`
+		Status     string `json:"status"`
 	}{
 		ResponseOrderAlias: (*ResponseOrderAlias)(o),
 	}
@@ -41,6 +44,7 @@ func (o *ResponseOrder) UnmarshalJSON(data []byte) (err error) {
 	if err != nil {
 		return err
 	}
+	o.Status = NewStatus(0, aliasValue.Status)
 	return
 }
 func (w ResponseWithdraw) MarshalJSON() ([]byte, error) {
@@ -79,5 +83,41 @@ func (w *ResponseWithdraw) UnmarshalJSON(data []byte) (err error) {
 	if err != nil {
 		return err
 	}
+	return
+}
+func (o ResponseAccuralSystem) MarshalJSON() ([]byte, error) {
+	// чтобы избежать рекурсии при json.Marshal, объявляем новый тип
+	type ResponseAccuralSystemAlias ResponseAccuralSystem
+
+	aliasValue := struct {
+		ResponseAccuralSystemAlias
+		// переопределяем поля внутри анонимной структуры
+		Status string `json:"status"`
+	}{
+		// встраиваем значение всех полей изначального объекта (embedding)
+		ResponseAccuralSystemAlias: ResponseAccuralSystemAlias(o),
+		// задаём значение для переопределённого поля
+		Status: o.Status.Value(),
+	}
+
+	return json.Marshal(aliasValue) // вызываем стандартный Marshal
+}
+func (o *ResponseAccuralSystem) UnmarshalJSON(data []byte) (err error) {
+	// чтобы избежать рекурсии при json.Unmarshal, объявляем новый тип
+	type ResponseAccuralSystemAlias ResponseAccuralSystem
+
+	aliasValue := &struct {
+		*ResponseAccuralSystemAlias
+		// переопределяем поле внутри анонимной структуры
+		UploadedAt string `json:"uploaded_at"`
+		Status     string `json:"status"`
+	}{
+		ResponseAccuralSystemAlias: (*ResponseAccuralSystemAlias)(o),
+	}
+	// вызываем стандартный Unmarshal
+	if err = json.Unmarshal(data, aliasValue); err != nil {
+		return err
+	}
+	o.Status = NewStatus(0, aliasValue.Status)
 	return
 }

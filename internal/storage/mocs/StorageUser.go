@@ -121,7 +121,7 @@ func (_m *StorageUser) Orders(ctx context.Context, userID uuid.UUID) (model.Resp
 }
 
 // OrdersByStatuses provides a mock function with given fields: ctx, statuses, limit, offset
-func (_m *StorageUser) OrdersByStatuses(ctx context.Context, statuses []string, limit int, offset int) (model.ResponseOrders, error) {
+func (_m *StorageUser) OrdersByStatuses(ctx context.Context, statuses []model.Status, limit int, offset int) (model.ResponseOrders, error) {
 	ret := _m.Called(ctx, statuses, limit, offset)
 
 	if len(ret) == 0 {
@@ -130,10 +130,10 @@ func (_m *StorageUser) OrdersByStatuses(ctx context.Context, statuses []string, 
 
 	var r0 model.ResponseOrders
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string, int, int) (model.ResponseOrders, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, []model.Status, int, int) (model.ResponseOrders, error)); ok {
 		return rf(ctx, statuses, limit, offset)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, []string, int, int) model.ResponseOrders); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, []model.Status, int, int) model.ResponseOrders); ok {
 		r0 = rf(ctx, statuses, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
@@ -141,7 +141,7 @@ func (_m *StorageUser) OrdersByStatuses(ctx context.Context, statuses []string, 
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []string, int, int) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []model.Status, int, int) error); ok {
 		r1 = rf(ctx, statuses, limit, offset)
 	} else {
 		r1 = ret.Error(1)

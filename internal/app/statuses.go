@@ -15,14 +15,6 @@ import (
 
 type Status string
 
-const (
-	StatusUndefined  = "UNDEFINED"
-	StatusNew        = "NEW"
-	StatusProcessing = "PROCESSING"
-	StatusInvalid    = "INVALID"
-	StatusProcessed  = "PROCESSED"
-)
-
 func (a *AppServer) updaterStatus(ctx context.Context) {
 	a.updateOrdersGroup(
 		ctx,
@@ -52,14 +44,14 @@ func (a *AppServer) updateOrders(ctx context.Context, accuralInfo <-chan model.R
 				"попытка повторного обновления",
 				slog.String("заказ", string(ai.OrderNumber)),
 				slog.Float64("начислено баллов", ai.Accrual),
-				slog.String("статус", string(ai.Status)),
+				slog.String("статус", string(ai.Status.Value())),
 			)
 		case err != nil:
 			a.log.Error(
 				"обновление заказа",
 				slog.String("заказ", string(ai.OrderNumber)),
 				slog.Float64("начислено баллов", ai.Accrual),
-				slog.String("статус", string(ai.Status)),
+				slog.String("статус", string(ai.Status.Value())),
 				slog.String("ошибка", err.Error()),
 			)
 		default:
@@ -67,7 +59,7 @@ func (a *AppServer) updateOrders(ctx context.Context, accuralInfo <-chan model.R
 				"заказ обновлен",
 				slog.String("заказ", string(ai.OrderNumber)),
 				slog.Float64("начислено баллов", ai.Accrual),
-				slog.String("статус", string(ai.Status)),
+				slog.String("статус", string(ai.Status.Value())),
 			)
 		}
 	}
@@ -149,7 +141,7 @@ func (a *AppServer) gettingOrders(ctx context.Context) chan model.ResponseOrder 
 	offset := 0
 	go func() {
 		ordersCh = make(chan model.ResponseOrder, 100)
-		wantSt := []string{StatusUndefined, StatusNew, StatusProcessing}
+		wantSt := []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing}
 		defer close(ordersCh)
 		for {
 			select {

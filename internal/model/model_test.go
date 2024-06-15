@@ -12,7 +12,7 @@ func TestMarshalResponseOrder(t *testing.T) {
 	t1 := time.Now()
 	val := ResponseOrder{
 		OrderNumber: "12345",
-		Status:      StatusNew,
+		Status:      NewStatus(0, "NEW"),
 		Accrual:     11.1,
 		UploadedAt:  t1,
 	}
