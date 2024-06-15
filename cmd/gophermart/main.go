@@ -17,7 +17,9 @@ func main() {
 	log.Println("i want see you", 1)
 	logger, err := logger.New(logger.WithLevel(slog.LevelDebug), logger.WithZap())
 	if err != nil {
-		log.Fatal(err)
+		// log.Fatal(err)
+		log.Println(err)
+		return
 	}
 	defer logger.Close()
 	log.Println("i want see you", 2)
@@ -33,7 +35,8 @@ func main() {
 	logger.Debug("конфигурация", slog.String("Address App", cfg.AddressApp), slog.String("Database URI", cfg.DatabaseURI), slog.String("Accural System Address", cfg.AccuralSystemAddress))
 	log.Println("i want see you", 5)
 	if err = app.RunApp(ctx, cfg, logger); err != nil {
-		log.Fatal(err)
+		logger.Error("запуск сервера", slog.String("ошибка", err.Error()))
+		return
 	}
 	log.Println("i want see you", 6)
 }
