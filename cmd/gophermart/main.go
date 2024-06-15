@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	log.Println("i want see you", 1)
+	panic(0)
 	logger, err := logger.New(logger.WithLevel(slog.LevelDebug))
 	if err != nil {
 		// log.Fatal(err)
