@@ -26,13 +26,8 @@ type PStorage struct {
 	*slog.Logger
 }
 
-func New(ctx context.Context, pdns string, logger *logger.Log) (*PStorage, error) {
+func NewStorage(ctx context.Context, pdns string, logger *logger.Log) (*PStorage, error) {
 	sl := logger.WithGroup("postgres")
-	err := migrations(pdns)
-	if err != nil {
-		sl.Error("проведение миграций", slog.String("ошибка", err.Error()))
-		return nil, err
-	}
 	pool, err := pgxpool.New(ctx, pdns)
 	if err != nil {
 		sl.Error("создание нового пула соединений", slog.String("err", err.Error()))
@@ -58,12 +53,12 @@ func New(ctx context.Context, pdns string, logger *logger.Log) (*PStorage, error
 	return &ps, nil
 }
 
-func migrations(pdns string) error {
+func Migration(connString string) error {
 	d, err := iofs.New(fs, "migrations")
 	if err != nil {
 		return fmt.Errorf("создание драйвера для считывания миграций. %w", err)
 	}
-	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(pdns, "postgres", "pgx5", 1))
+	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(connString, "postgres", "pgx5", 1))
 	if err != nil {
 		return fmt.Errorf("создание экземпляра миграций. %w", err)
 	}

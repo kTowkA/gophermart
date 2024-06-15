@@ -35,31 +35,36 @@ type AppTestSuite struct {
 	suite.Suite
 	app         *AppServer
 	mockStorage *mocks.Storage
-	cancel      context.CancelFunc
 }
 
 func (suite *AppTestSuite) SetupSuite() {
 	mlog, err := logger.New()
 	suite.Require().NoError(err)
 	mockStorage := new(mocks.Storage)
-	app := NewAppServer(config.Config{
-		AddressApp: fmt.Sprintf(":%d", port),
-	})
-	app.SetStorage(mockStorage)
-	suite.Require().NoError(err)
+	app := &AppServer{
+		storage: mockStorage,
+		config: config.Config{
+			AddressApp: fmt.Sprintf(":%d", port),
+			Secret:     "secret",
+		},
+		log: mlog.WithGroup("test-file-app"),
+	}
+	app.server = &http.Server{
+		Addr:    app.config.AddressApp,
+		Handler: app.createRoute(),
+	}
 	suite.app = app
 	suite.mockStorage = mockStorage
 	suite.mockStorage.On("OrdersByStatuses", mock.Anything, []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing}, 100, 0).Return(nil, storage.ErrOrdersNotFound)
-	ctx, cancel := context.WithCancel(context.Background())
-	suite.cancel = cancel
+
 	go func() {
-		err = suite.app.Start(ctx, mlog)
+		err = suite.app.server.ListenAndServe()
 		suite.NoError(err)
 	}()
 	time.Sleep(1 * time.Second)
 }
 func (suite *AppTestSuite) TearDownSuite() {
-	suite.cancel()
+
 	suite.mockStorage.On("Close", mock.Anything).Return(nil)
 	err := suite.app.storage.Close(context.Background())
 	suite.Require().NoError(err)
