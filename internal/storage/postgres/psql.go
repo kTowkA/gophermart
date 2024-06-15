@@ -50,7 +50,7 @@ func New(ctx context.Context, pdns string, logger *logger.Log) (*PStorage, error
 		&storage.StatusProcessed}
 	err = ps.SaveStatuses(ctx, statuses)
 	if err != nil {
-		ps.Close()
+		ps.Close(ctx)
 		sl.Error("сохранение статусов", slog.String("ошибка", err.Error()))
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (p *PStorage) SaveStatuses(ctx context.Context, statuses []*model.Status) e
 	}
 	return nil
 }
-func (p *PStorage) Close() error {
+func (p *PStorage) Close(ctx context.Context) error {
 	p.Pool.Close()
 	return nil
 }

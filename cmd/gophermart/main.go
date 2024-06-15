@@ -11,6 +11,7 @@ import (
 	"github.com/kTowkA/gophermart/internal/app"
 	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/logger"
+	"github.com/kTowkA/gophermart/internal/storage/postgres"
 )
 
 func main() {
@@ -24,7 +25,14 @@ func main() {
 		logger.Error("чтение конфигурационного файла", slog.String("ошибка", err.Error()))
 		return
 	}
-	myapp := app.NewAppServer(cfg, nil, logger)
+
+	pstorage, err := postgres.New(context.Background(), cfg.DatabaseURI, logger)
+	if err != nil {
+		logger.Error("создание хранилища", slog.String("DatabaseURI", cfg.DatabaseURI), slog.String("ошибка", err.Error()))
+		return
+	}
+
+	myapp := app.NewAppServer(cfg, pstorage, logger)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	err = myapp.Start(ctx)
