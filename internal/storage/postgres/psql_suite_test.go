@@ -41,7 +41,7 @@ func (suite *PStorageTestSuite) SetupSuite() {
 
 	var connString string
 	err = pool.Retry(func() error {
-		time.Sleep(5 * time.Second)
+		time.Sleep(3 * time.Second)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		connString = fmt.Sprintf("postgres://user:pass@localhost:%s/user?sslmode=disable", resource.GetPort("5432/tcp"))
@@ -59,13 +59,15 @@ func (suite *PStorageTestSuite) SetupSuite() {
 	// ---------------------------------------------------------------------------------------------------
 	mlog, err := logger.New()
 	suite.Require().NoError(err)
-	ps, err := New(context.Background(), connString, mlog)
+	err = Migration(connString)
+	suite.Require().NoError(err)
+	ps, err := NewStorage(context.Background(), connString, mlog)
 	suite.Require().NoError(err)
 	suite.pstorage = ps
 
 }
 func (suite *PStorageTestSuite) TearDownSuite() {
-	err := suite.pstorage.Close()
+	err := suite.pstorage.Close(context.Background())
 	suite.NoError(err)
 	err = suite.clear.pool.Purge(suite.clear.resource)
 	suite.NoError(err)

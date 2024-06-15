@@ -14,24 +14,26 @@ import (
 )
 
 func main() {
+	log.Println("i want see you", 1)
 	logger, err := logger.New(logger.WithLevel(slog.LevelDebug), logger.WithZap())
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer logger.Close()
-
-	rootCtx, cancelCtx := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancelCtx()
-
+	log.Println("i want see you", 2)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	log.Println("i want see you", 3)
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		logger.Error("чтение конфигурационного файла", slog.String("ошибка", err.Error()))
 		return
 	}
+	log.Println("i want see you", 4)
 	logger.Debug("конфигурация", slog.String("Address App", cfg.AddressApp), slog.String("Database URI", cfg.DatabaseURI), slog.String("Accural System Address", cfg.AccuralSystemAddress))
-
-	if err = app.RunApp(rootCtx, cfg, logger); err != nil {
+	log.Println("i want see you", 5)
+	if err = app.RunApp(ctx, cfg, logger); err != nil {
 		log.Fatal(err)
 	}
-
+	log.Println("i want see you", 6)
 }
