@@ -116,6 +116,7 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 					)
 					continue
 				}
+				a.log.Debug("поступившая информация", slog.Int("статус", resp.StatusCode()), slog.String("заказ", string(o.OrderNumber)), slog.Any("result", result))
 				switch resp.StatusCode() {
 				case http.StatusOK:
 					accuralInfo <- result
