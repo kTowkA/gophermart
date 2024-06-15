@@ -97,7 +97,7 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 
 		req := resty.
 			New().
-			SetBaseURL(a.config.AccuralSystemAddress).
+			SetBaseURL(a.config.AccruralSystemAddress).
 			R()
 		for {
 			select {
@@ -110,7 +110,7 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 				if err != nil {
 					a.log.Error(
 						"обращение к системе расчета баллов",
-						slog.String("BaseURL", a.config.AccuralSystemAddress),
+						slog.String("BaseURL", a.config.AccruralSystemAddress),
 						slog.String("path", "/api/orders/"+string(o.OrderNumber)),
 						slog.String("ошибка", err.Error()),
 					)

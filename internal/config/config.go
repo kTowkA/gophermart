@@ -11,22 +11,22 @@ const (
 )
 
 var (
-	addressApp           string
-	databaseURI          string
-	accuralSystemAddress string
+	addressApp            string
+	databaseURI           string
+	acrcuralSystemAddress string
 )
 
 type Config struct {
-	AddressApp           string `env:"RUN_ADDRESS"`
-	DatabaseURI          string `env:"DATABASE_URI"`
-	AccuralSystemAddress string `env:"ACCURAL_SYSTEM_ADDRESS"`
-	Secret               string `env:"SECRET"`
+	AddressApp            string `env:"RUN_ADDRESS"`
+	DatabaseURI           string `env:"DATABASE_URI"`
+	AccruralSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
+	Secret                string `env:"SECRET"`
 }
 
 func LoadConfig() (Config, error) {
 	flag.StringVar(&addressApp, "a", "", "run address app")
 	flag.StringVar(&databaseURI, "d", "", "database URI")
-	flag.StringVar(&accuralSystemAddress, "r", "", "accural system address")
+	flag.StringVar(&acrcuralSystemAddress, "r", "", "accrural system address")
 
 	flag.Parse()
 
@@ -42,8 +42,8 @@ func LoadConfig() (Config, error) {
 	if cfg.DatabaseURI == "" {
 		cfg.DatabaseURI = databaseURI
 	}
-	if cfg.AccuralSystemAddress == "" {
-		cfg.AccuralSystemAddress = accuralSystemAddress
+	if cfg.AccruralSystemAddress == "" {
+		cfg.AccruralSystemAddress = acrcuralSystemAddress
 	}
 	if cfg.Secret == "" {
 		cfg.Secret = secret

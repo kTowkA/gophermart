@@ -27,7 +27,7 @@ func main() {
 		logger.Error("чтение конфигурационного файла", slog.String("ошибка", err.Error()))
 		return
 	}
-	logger.Debug("конфигурация", slog.String("Address App", cfg.AddressApp), slog.String("Database URI", cfg.DatabaseURI), slog.String("Accural System Address", cfg.AccuralSystemAddress))
+	logger.Debug("конфигурация", slog.String("Address App", cfg.AddressApp), slog.String("Database URI", cfg.DatabaseURI), slog.String("Accural System Address", cfg.AccruralSystemAddress))
 	if err = app.RunApp(ctx, cfg, logger); err != nil {
 		logger.Error("запуск сервера", slog.String("ошибка", err.Error()))
 		return
