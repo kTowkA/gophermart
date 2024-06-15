@@ -21,6 +21,7 @@ func main() {
 			log.Println(fmt.Errorf("a panic occurred: %v", errRec))
 		}
 	}()
+	panic("why panic")
 	logger, err := logger.New(logger.WithLevel(slog.LevelDebug))
 	if err != nil {
 		// log.Fatal(err)
