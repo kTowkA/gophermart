@@ -9,12 +9,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/kTowkA/gophermart/internal/app"
 	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/logger"
-	"github.com/kTowkA/gophermart/internal/storage/postgres"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -26,7 +26,7 @@ func main() {
 	defer logger.Close()
 
 	// корневой контекст приложения
-	rootCtx, cancelCtx := signal.NotifyContext(context.Background(), os.Interrupt)
+	rootCtx, cancelCtx := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancelCtx()
 
 	g, ctx := errgroup.WithContext(rootCtx)
@@ -39,7 +39,8 @@ func main() {
 		defer cancelCtx()
 
 		<-ctx.Done()
-		log.Fatal("failed to gracefully shutdown the service")
+		logger.Error("failed to gracefully shutdown the service")
+		os.Exit(1)
 	})
 
 	cfg, err := config.LoadConfig()
@@ -50,25 +51,7 @@ func main() {
 
 	logger.Debug("конфигурация", slog.String("Address App", cfg.AddressApp), slog.String("Database URI", cfg.DatabaseURI), slog.String("Accural System Address", cfg.AccuralSystemAddress))
 
-	// открытие соединения – относительно долгая, io-bound операция
-	// она использует контекст
-	pstorage, err := postgres.New(ctx, cfg.DatabaseURI, logger)
-	if err != nil {
-		logger.Error("создание хранилища", slog.String("DatabaseURI", cfg.DatabaseURI), slog.String("ошибка", err.Error()))
-		return
-	}
-
-	// отслеживаем успешное закрытие соединения с БД
-	g.Go(func() error {
-		defer log.Print("closed DB")
-
-		<-ctx.Done()
-
-		pstorage.Close(context.Background())
-		return nil
-	})
-
-	myapp := app.NewAppServer(cfg, pstorage, logger)
+	myapp := app.NewAppServer(cfg)
 	// запуск сервера
 	g.Go(func() (err error) {
 		defer func() {
@@ -77,9 +60,9 @@ func main() {
 				err = fmt.Errorf("a panic occurred: %v", errRec)
 			}
 		}()
-		if err = myapp.Start(context.Background()); err != nil {
+		if err = myapp.Start(context.Background(), logger); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
-				return
+				return nil
 			}
 			return fmt.Errorf("listen and server has failed: %w", err)
 		}
@@ -88,13 +71,13 @@ func main() {
 
 	// отслеживаем успешное завершение работы сервера
 	g.Go(func() error {
-		defer log.Print("server has been shutdown")
+		defer logger.Info("server has been shutdown")
 		<-ctx.Done()
 
 		shutdownTimeoutCtx, cancelShutdownTimeoutCtx := context.WithTimeout(context.Background(), 1*time.Minute)
 		defer cancelShutdownTimeoutCtx()
 		if err := myapp.Shutdown(shutdownTimeoutCtx); err != nil {
-			log.Printf("an error occurred during server shutdown: %v", err)
+			logger.Error("an error occurred during server shutdown", slog.String("ошибка", err.Error()))
 		}
 		return nil
 	})

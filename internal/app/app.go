@@ -9,6 +9,7 @@ import (
 	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/storage"
+	"github.com/kTowkA/gophermart/internal/storage/postgres"
 )
 
 type AppServer struct {
@@ -18,16 +19,14 @@ type AppServer struct {
 	server  *http.Server
 }
 
-func NewAppServer(cfg config.Config, storage storage.Storage, log *logger.Log) *AppServer {
+func NewAppServer(cfg config.Config) *AppServer {
 	app := AppServer{
-		config:  cfg,
-		storage: storage,
-		log:     log.WithGroup("application"),
+		config: cfg,
 	}
 	return &app
 }
 
-func (a *AppServer) Start(ctx context.Context) error {
+func (a *AppServer) Start(ctx context.Context, log *logger.Log) error {
 	r := chi.NewRouter()
 	r.Use(middlewarePostBody, a.middlewareAuthUser, a.middlewareLog)
 	r.Route("/api/user", func(r chi.Router) {
@@ -46,29 +45,22 @@ func (a *AppServer) Start(ctx context.Context) error {
 		Addr:    a.config.AddressApp,
 		Handler: r,
 	}
+	a.log = log.WithGroup("application")
+	if a.storage == nil {
+		pst, err := postgres.New(ctx, a.config.DatabaseURI, log)
+		if err != nil {
+			return err
+		}
+		a.storage = pst
+	}
+
 	return a.server.ListenAndServe()
-	// log.Println("!!!", a.server.ListenAndServe())
-	// gr, gCtx := errgroup.WithContext(ctx)
-	// gr.Go(func() error {
-	// 	return a.server.ListenAndServe()
-	// })
-	// gr.Go(func() error {
-	// 	<-gCtx.Done()
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	// 	defer cancel()
-	// 	return a.server.Shutdown(ctx)
-	// })
-	// gr.Go(func() error {
-	// 	a.updaterStatus(ctx)
-	// 	return nil
-	// })
-	// err := gr.Wait()
-	// if err != nil {
-	// 	a.log.Error("сервер", slog.String("ошибка", err.Error()))
-	// }
-	// return nil
 }
 
 func (a *AppServer) Shutdown(ctx context.Context) error {
+	a.storage.Close(ctx)
 	return a.server.Shutdown(ctx)
+}
+func (a *AppServer) SetStorage(storage storage.Storage) {
+	a.storage = storage
 }
