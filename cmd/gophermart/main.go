@@ -15,7 +15,7 @@ import (
 
 func main() {
 	log.Println("i want see you", 1)
-	logger, err := logger.New(logger.WithLevel(slog.LevelDebug), logger.WithZap())
+	logger, err := logger.New(logger.WithLevel(slog.LevelDebug))
 	if err != nil {
 		// log.Fatal(err)
 		log.Println(err)
