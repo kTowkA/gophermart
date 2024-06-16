@@ -52,7 +52,7 @@ func (a *AppServer) rRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// генерируем новый токен
-	token, err := buildJWTString(userID, req.Login, a.config.Secret, 24*time.Hour)
+	token, err := buildJWTString(userID, req.Login, a.config.Secret(), 24*time.Hour)
 	if err != nil {
 		a.log.Error("генерация токена", slog.String("логин", req.Login), slog.String("ошибка", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -111,7 +111,7 @@ func (a *AppServer) rLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// генерируем новый токен
-	token, err := buildJWTString(userID, req.Login, a.config.Secret, 24*time.Hour)
+	token, err := buildJWTString(userID, req.Login, a.config.Secret(), 24*time.Hour)
 	if err != nil {
 		a.log.Error("генерация токена", slog.String("логин", req.Login), slog.String("ошибка", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)

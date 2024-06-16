@@ -43,14 +43,11 @@ func (suite *AppTestSuite) SetupSuite() {
 	mockStorage := new(mocks.Storage)
 	app := &AppServer{
 		storage: mockStorage,
-		config: config.Config{
-			AddressApp: fmt.Sprintf(":%d", port),
-			Secret:     "secret",
-		},
-		log: mlog.WithGroup("test-file-app"),
+		config:  config.NewConfig(fmt.Sprintf(":%d", port), "", "", "secret"),
+		log:     mlog.WithGroup("test-file-app"),
 	}
 	app.server = &http.Server{
-		Addr:    app.config.AddressApp,
+		Addr:    app.config.AddressApp(),
 		Handler: app.createRoute(),
 	}
 	suite.app = app
@@ -107,7 +104,7 @@ func (suite *AppTestSuite) TestMiddlewareCheckOnlyAuthUser() {
 		)
 		req := resty.New().
 			SetHeader("content-type", "application/json").
-			SetBaseURL("http://localhost" + suite.app.config.AddressApp).
+			SetBaseURL("http://localhost" + suite.app.config.AddressApp()).
 			R().
 			SetContext(ctx).
 			SetBody(t.body)
@@ -178,7 +175,7 @@ func (suite *AppTestSuite) TestRouteRegister() {
 
 	client := resty.New().
 		SetHeader("content-type", "application/json").
-		SetBaseURL("http://localhost" + suite.app.config.AddressApp)
+		SetBaseURL("http://localhost" + suite.app.config.AddressApp())
 	for _, t := range tests {
 		resp, err := client.R().
 			SetContext(ctx).
@@ -237,7 +234,7 @@ func (suite *AppTestSuite) TestRouteLogin() {
 	for _, t := range tests {
 		resp, err := resty.New().
 			SetHeader("content-type", "application/json").
-			SetBaseURL("http://localhost" + suite.app.config.AddressApp).
+			SetBaseURL("http://localhost" + suite.app.config.AddressApp()).
 			R().
 			SetBody(t.body).
 			SetContext(ctx).
@@ -327,7 +324,7 @@ func (suite *AppTestSuite) LoggedClient(ctx context.Context, login, password str
 
 	client := resty.
 		New().
-		SetBaseURL("http://localhost" + suite.app.config.AddressApp)
+		SetBaseURL("http://localhost" + suite.app.config.AddressApp())
 	resp, err := client.
 		R().SetContext(ctx).
 		SetBody(`{"login":"`+login+`","password":"`+password+`"}`).

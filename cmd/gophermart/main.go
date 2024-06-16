@@ -36,9 +36,9 @@ func main() {
 	}
 	logger.Debug(
 		"установленная конфигурация приложения",
-		slog.String("адрес приложения для запуска", cfg.AddressApp),
-		slog.String("строка подключения базы данных", cfg.DatabaseURI),
-		slog.String("адрес расчета системы лояльности", cfg.AccruralSystemAddress),
+		slog.String("адрес приложения для запуска", cfg.AddressApp()),
+		slog.String("строка подключения базы данных", cfg.DatabaseURI()),
+		slog.String("адрес расчета системы лояльности", cfg.AccruralSystemAddress()),
 	)
 
 	// запуск приложения с контекстом отмены по сигналу

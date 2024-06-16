@@ -29,18 +29,18 @@ func RunApp(ctx context.Context, cfg config.Config, log *logger.Log) error {
 		config: cfg,
 	}
 	app.server = &http.Server{
-		Addr:    cfg.AddressApp,
+		Addr:    cfg.AddressApp(),
 		Handler: app.createRoute(),
 	}
-	if cfg.DatabaseURI != "" {
-		err := postgres.Migration(cfg.DatabaseURI)
+	if cfg.DatabaseURI() != "" {
+		err := postgres.Migration(cfg.DatabaseURI())
 		if err != nil {
-			app.log.Error("проведение миграций", slog.String("DatabaseURI", cfg.DatabaseURI), slog.String("ошибка", err.Error()))
+			app.log.Error("проведение миграций", slog.String("DatabaseURI", cfg.DatabaseURI()), slog.String("ошибка", err.Error()))
 			return err
 		}
-		storage, err := postgres.NewStorage(ctx, cfg.DatabaseURI, log)
+		storage, err := postgres.NewStorage(ctx, cfg.DatabaseURI(), log)
 		if err != nil {
-			app.log.Error("подключение к БД", slog.String("DatabaseURI", cfg.DatabaseURI), slog.String("ошибка", err.Error()))
+			app.log.Error("подключение к БД", slog.String("DatabaseURI", cfg.DatabaseURI()), slog.String("ошибка", err.Error()))
 			return err
 		}
 		app.storage = storage

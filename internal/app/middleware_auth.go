@@ -44,7 +44,7 @@ func (a *AppServer) middlewareAuthUser(next http.Handler) http.Handler {
 			return
 		}
 		// получаем пользовательские данные
-		uc, err := getUserClaimsFromToken(cookieToken.Value, a.config.Secret)
+		uc, err := getUserClaimsFromToken(cookieToken.Value, a.config.Secret())
 		if err != nil {
 			a.log.Error("получение данных пользователя",
 				slog.String("ошибка", err.Error()))
