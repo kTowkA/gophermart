@@ -240,6 +240,13 @@ func (p *PStorage) Orders(ctx context.Context, userID uuid.UUID) (model.Response
 			return nil, err
 		}
 		order.Status = storage.StatusByValue(statusVal)
+		p.Debug(
+			"найден заказа",
+			slog.String("userID", userID.String()),
+			slog.String("номер", string(order.OrderNumber)),
+			slog.String("статус", order.Status.Value()),
+			slog.Float64("баллов", order.Accrual),
+		)
 		orders = append(orders, order)
 	}
 	if len(orders) == 0 {

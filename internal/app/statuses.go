@@ -141,7 +141,7 @@ func (a *AppServer) gettingOrders(ctx context.Context) chan model.ResponseOrder 
 	offset := 0
 	go func() {
 
-		wantSt := []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing}
+		wantSt := []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing, storage.StatusRegistered}
 		defer close(ordersCh)
 		for {
 			select {

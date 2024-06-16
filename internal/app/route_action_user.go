@@ -66,5 +66,4 @@ func (a *AppServer) rOrdersGet(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// w.WriteHeader(http.StatusOK)
 }
