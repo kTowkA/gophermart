@@ -23,3 +23,6 @@ git fetch template && git checkout template/master .github
 ```
 
 Затем добавьте полученные изменения в свой репозиторий.
+
+![Иллюстрация к проекту](https://github.com/kTowkA/gophermart/raw/dev/image/ar.png)
+![Схема БД](https://github.com/kTowkA/gophermart/raw/dev/image/bd.png)

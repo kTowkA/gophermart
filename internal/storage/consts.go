@@ -2,6 +2,7 @@ package storage
 
 import "github.com/kTowkA/gophermart/internal/model"
 
+// это переменные возможных статусов. При инициализации БД, они сохраняются в базу данных (или нет, если уже они там были) и получают актальный ключ из БД
 var (
 	StatusUndefined  = model.NewStatus(0, "UNDEFINED")
 	StatusNew        = model.NewStatus(0, "NEW")

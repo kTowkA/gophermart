@@ -1,5 +1,6 @@
 package model
 
+// статус. так как у нас в репозитории ключ и значение это не одно поле, делаем так
 type Status struct {
 	key   int
 	value string
@@ -23,10 +24,3 @@ func (s *Status) SetKey(key int) {
 func (s *Status) SetValue(value string) {
 	s.value = value
 }
-
-// const (
-// 	StatusNew        = Status("NEW")
-// 	StatusProcessing = Status("PROCESSING")
-// 	StatusInvalid    = Status("INVALID")
-// 	StatusProcessed  = Status("PROCESSED")
-// )

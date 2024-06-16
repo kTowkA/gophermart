@@ -49,6 +49,7 @@ func (p *PStorage) Balance(ctx context.Context, userID uuid.UUID) (model.Respons
 		p.Error("получение пополенений пользователя", slog.String("userID", userID.String()), slog.String("ошибка", err.Error()))
 		return model.ResponseBalance{}, err
 	}
+	p.Debug("успешное получение баланса у пользователя", slog.String("userID", userID.String()), slog.Float64("withdrawn", withdrawn), slog.Float64("current", accural-withdrawn))
 	return model.ResponseBalance{
 		Current:   accural - withdrawn,
 		Withdrawn: withdrawn,
@@ -93,6 +94,7 @@ func (p *PStorage) Withdrawals(ctx context.Context, userID uuid.UUID) (model.Res
 		p.Warn("получение списаний пользователя. списаний нет", slog.String("userID", userID.String()))
 		return model.ResponseWithdrawals{}, storage.ErrWithdrawalsNotFound
 	}
+	p.Debug("успешное получение списаний пользователя", slog.String("userID", userID.String()), slog.Int("всего списаний", len(withdrawals)))
 	return withdrawals, nil
 }
 
@@ -120,5 +122,6 @@ func (p *PStorage) Withdraw(ctx context.Context, userID uuid.UUID, requestWithdr
 	if err != nil {
 		p.Error("списание средств у пользователя", slog.String("userID", userID.String()), slog.String("ошибка", err.Error()))
 	}
+	p.Debug("успешное списание у пользователя", slog.String("userID", userID.String()), slog.String("списание в счет заказа", string(requestWithdraw.OrderNumber)), slog.Float64("сумма списания", requestWithdraw.Sum))
 	return nil
 }

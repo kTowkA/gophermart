@@ -26,3 +26,4 @@ vendor/
 *.log
 internal/app/app_suite_2_test.go
 internal/fork/
+posgres_help.md

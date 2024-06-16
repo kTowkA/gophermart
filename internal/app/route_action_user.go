@@ -45,7 +45,6 @@ func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (a *AppServer) rOrdersGet(w http.ResponseWriter, r *http.Request) {
-
 	uc, ok := (r.Context().Value(userClaims{})).(UserClaims)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)

@@ -42,7 +42,6 @@ func (a *AppServer) middlewareLog(h http.Handler) http.Handler {
 		}
 
 		h.ServeHTTP(&lw, r)
-
 		duration := time.Since(start)
 		a.log.Info(
 			"запрос",

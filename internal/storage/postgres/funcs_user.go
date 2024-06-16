@@ -33,6 +33,7 @@ func (p *PStorage) SaveUser(ctx context.Context, login, hashPassword string) (uu
 		p.Error("запрос на сохранение пользователя", slog.String("логин", login), slog.String("ошибка", err.Error()))
 		return uuid.UUID{}, err
 	}
+	p.Debug("успешное сохранение пользователя", slog.String("логин", login), slog.String("userID", userID.String()))
 	return userID, nil
 }
 
@@ -47,6 +48,7 @@ func (p *PStorage) UserID(ctx context.Context, login string) (uuid.UUID, error) 
 		p.Warn("запрос поиска ID пользователя по логину", slog.String("логин", login), slog.String("ошибка", err.Error()))
 		return uuid.UUID{}, err
 	}
+	p.Debug("получение пользователя по логину", slog.String("логин", login), slog.String("userID", userID.String()))
 	return userID, nil
 }
 
@@ -61,5 +63,6 @@ func (p *PStorage) HashPassword(ctx context.Context, userID uuid.UUID) (string, 
 		p.Warn("запрос хеша пароля пользователя по userID", slog.String("userID", userID.String()), slog.String("ошибка", err.Error()))
 		return "", err
 	}
+	p.Debug("успешное получение хеша пароля пользователя", slog.String("userID", userID.String()))
 	return hash, nil
 }

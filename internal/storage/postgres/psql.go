@@ -26,9 +26,10 @@ type PStorage struct {
 	*slog.Logger
 }
 
-func NewStorage(ctx context.Context, pdns string, logger *logger.Log) (*PStorage, error) {
+// NewStorage создает новое хранилище типа PStorage, реализующее интерфейс storage.Storage
+func NewStorage(ctx context.Context, connString string, logger *logger.Log) (*PStorage, error) {
 	sl := logger.WithGroup("postgres")
-	pool, err := pgxpool.New(ctx, pdns)
+	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		sl.Error("создание нового пула соединений", slog.String("err", err.Error()))
 		return nil, err
@@ -43,16 +44,19 @@ func NewStorage(ctx context.Context, pdns string, logger *logger.Log) (*PStorage
 		&storage.StatusRegistered,
 		&storage.StatusInvalid,
 		&storage.StatusProcessing,
-		&storage.StatusProcessed}
+		&storage.StatusProcessed,
+	}
 	err = ps.SaveStatuses(ctx, statuses)
 	if err != nil {
 		ps.Close(ctx)
-		sl.Error("сохранение статусов", slog.String("ошибка", err.Error()))
+		sl.Error("сохранение/обновление статусов", slog.String("ошибка", err.Error()))
 		return nil, err
 	}
 	return &ps, nil
 }
 
+// проведение миграций.
+// вначале было неэкспортируемой функцией и миграции проводились при создании хранилища, но потом сделал так, чтобы миграции проводило приложение. Может это неверное решение
 func Migration(connString string) error {
 	d, err := iofs.New(fs, "migrations")
 	if err != nil {

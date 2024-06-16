@@ -18,6 +18,8 @@ func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum mod
 		p.Error("создание транзакции", slog.String("ошибка", err.Error()))
 		return err
 	}
+
+	// проверка, что такого заказа не было
 	var userIDintoDB uuid.UUID
 	err = tx.QueryRow(
 		ctx,
@@ -36,8 +38,11 @@ func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum mod
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		p.Error("поиск пользователя создающего заказ", slog.String("номер заказа", string(orderNum)), slog.String("ошибка", err.Error()))
+		_ = tx.Rollback(ctx)
 		return err
 	}
+
+	// создание нового заказа
 	orderID := uuid.New()
 	_, err = tx.Exec(
 		ctx,
@@ -55,6 +60,7 @@ func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum mod
 		return err
 	}
 
+	// привязывание статуса
 	_, err = tx.Exec(
 		ctx,
 		"INSERT INTO orders_statuses(order_id,status_id,adding_at,update_at) VALUES($1,$2,$3,$4)",
@@ -73,6 +79,7 @@ func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum mod
 		p.Error("сохранение заказа. фиксация изменений", slog.String("номер заказа", string(orderNum)), slog.String("пользователь", userID.String()), slog.String("ошибка", err.Error()))
 		return err
 	}
+	p.Debug("успешное сохранение нового заказа", slog.String("заказ", string(orderNum)), slog.String("ID заказа", orderID.String()), slog.String("пользователь", userID.String()))
 	return nil
 }
 
@@ -128,6 +135,7 @@ func (p *PStorage) UpdateOrders(ctx context.Context, info []model.ResponseAccura
 		_ = tx.Rollback(ctx)
 		return 0, err
 	}
+	p.Debug("успешное сохранение группы заказов", slog.Int("всего", len(info)))
 	return len(info), nil
 }
 
@@ -196,6 +204,7 @@ func (p *PStorage) OrdersByStatuses(ctx context.Context, statuses []model.Status
 		p.Warn("поиск заказов по статусам. заказов нет.", slog.Int("лимит", limit), slog.Int("смещение", offset))
 		return nil, storage.ErrOrdersNotFound
 	}
+	p.Debug("успешное получение заказов по статусам", slog.Int("найдено заказов", len(orders)), slog.Int("статусов в запросе", len(statuses)))
 	return orders, nil
 }
 
@@ -240,18 +249,12 @@ func (p *PStorage) Orders(ctx context.Context, userID uuid.UUID) (model.Response
 			return nil, err
 		}
 		order.Status = storage.StatusByValue(statusVal)
-		p.Debug(
-			"найден заказа",
-			slog.String("userID", userID.String()),
-			slog.String("номер", string(order.OrderNumber)),
-			slog.String("статус", order.Status.Value()),
-			slog.Float64("баллов", order.Accrual),
-		)
 		orders = append(orders, order)
 	}
 	if len(orders) == 0 {
 		p.Warn("поиск заказов у пользователя. заказов нет.", slog.String("userID", userID.String()))
 		return nil, storage.ErrOrdersNotFound
 	}
+	p.Debug("успешное получение заказов у пользователя", slog.Int("найдено заказов", len(orders)), slog.String("пользователь", userID.String()))
 	return orders, nil
 }

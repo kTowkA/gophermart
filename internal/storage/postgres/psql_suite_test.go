@@ -1,6 +1,7 @@
 //go:build integrations
 // +build integrations
 
+// наш suit тест с тегом integrations. Здесь поднимается докер, проверяем базу данных
 package postgres
 
 import (
@@ -57,7 +58,7 @@ func (suite *PStorageTestSuite) SetupSuite() {
 		pool:     pool,
 	}
 	// ---------------------------------------------------------------------------------------------------
-	mlog, err := logger.New()
+	mlog, err := logger.NewLog()
 	suite.Require().NoError(err)
 	err = Migration(connString)
 	suite.Require().NoError(err)
