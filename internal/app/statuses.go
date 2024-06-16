@@ -13,8 +13,6 @@ import (
 	"github.com/kTowkA/gophermart/internal/storage"
 )
 
-type Status string
-
 func (a *AppServer) updaterStatus(ctx context.Context) {
 	a.updateOrdersGroup(
 		ctx,
@@ -90,9 +88,9 @@ func (a *AppServer) updateOrdersGroup(ctx context.Context, accuralInfo <-chan mo
 	}
 }
 func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-chan model.ResponseOrder) chan model.ResponseAccuralSystem {
-	var accuralInfo chan model.ResponseAccuralSystem
+	accuralInfo := make(chan model.ResponseAccuralSystem, 100)
 	go func(ctx context.Context, orders <-chan model.ResponseOrder) {
-		accuralInfo = make(chan model.ResponseAccuralSystem, 100)
+
 		defer close(accuralInfo)
 
 		req := resty.
@@ -138,11 +136,11 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 	return accuralInfo
 }
 func (a *AppServer) gettingOrders(ctx context.Context) chan model.ResponseOrder {
-	var ordersCh chan model.ResponseOrder
+	ordersCh := make(chan model.ResponseOrder, 100)
 	limit := 100
 	offset := 0
 	go func() {
-		ordersCh = make(chan model.ResponseOrder, 100)
+
 		wantSt := []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing}
 		defer close(ordersCh)
 		for {
