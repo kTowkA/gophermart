@@ -24,10 +24,6 @@ func main() {
 	}
 	defer logger.Close()
 
-	// главный контекст приложения для отмены по ctrl+c + syscall.SIGTERM (он вроде отвечает за сигнал отмены в контейнерах)
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-
 	// читаем конфигурацию
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -40,6 +36,10 @@ func main() {
 		slog.String("строка подключения базы данных", cfg.DatabaseURI()),
 		slog.String("адрес расчета системы лояльности", cfg.AccruralSystemAddress()),
 	)
+
+	// главный контекст приложения для отмены по ctrl+c + syscall.SIGTERM (он вроде отвечает за сигнал отмены в контейнерах)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	// запуск приложения с контекстом отмены по сигналу
 	if err = app.RunApp(ctx, cfg, logger); err != nil {

@@ -12,14 +12,13 @@ import (
 // cookieTokenName название ключа с токеном в куках
 var cookieTokenName = "app_token"
 
-// Claims — структура утверждений, которая включает стандартные утверждения и
-// одно пользовательские UserClaims
+// Claims — структура утверждений, которая включает стандартные утверждения и одно пользовательское UserClaims
 type Claims struct {
 	jwt.RegisteredClaims
 	UserClaims
 }
 
-// UserClaims дополнительные утверждения
+// UserClaims дополнительные утверждения. Логин нигде не используется, но пускай будет с заделом на будущее
 type UserClaims struct {
 	UserID uuid.UUID
 	Login  string

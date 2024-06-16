@@ -13,6 +13,7 @@ import (
 	"github.com/kTowkA/gophermart/internal/storage"
 )
 
+// updaterStatus это конвейер для взаимодействия с внешней системой расчета баллов лояльности. На первом шаге получаем заказы с неокончательными статусами и записываем их в канал, далее читаем эти заказы из канала и делаем обращение к внешней системе расчета баллов лояльности, результат записываем в канал и далее читаем из этого канала и обновляем в нашей базе данных соответсвующие заказы
 func (a *AppServer) updaterStatus(ctx context.Context) {
 	a.updateOrders(
 		ctx,
@@ -22,11 +23,13 @@ func (a *AppServer) updaterStatus(ctx context.Context) {
 		),
 	)
 }
+
+// updateOrders обновляет заказы обработанные системой рачета баллов лояльности
 func (a *AppServer) updateOrders(ctx context.Context, accuralInfo <-chan model.ResponseAccuralSystem) {
 	for ai := range accuralInfo {
 		select {
 		case <-ctx.Done():
-			a.log.Debug("выход из updateOrders")
+			a.log.Debug("получен сигнал остановки. Выходим из функции обновления заказов")
 			return
 		default:
 		}
@@ -38,7 +41,7 @@ func (a *AppServer) updateOrders(ctx context.Context, accuralInfo <-chan model.R
 				slog.String("заказ", string(ai.OrderNumber)),
 			)
 		case errors.Is(err, storage.ErrNothingHasBeenDone):
-			a.log.Debug(
+			a.log.Info(
 				"попытка повторного обновления",
 				slog.String("заказ", string(ai.OrderNumber)),
 				slog.Float64("начислено баллов", ai.Accrual),
@@ -62,13 +65,15 @@ func (a *AppServer) updateOrders(ctx context.Context, accuralInfo <-chan model.R
 		}
 	}
 }
+
+// updateOrdersGroup обновляет сразу группу. Можно использовать эту функцию вместо updateOrders, единственное - при тикере больше чем время получения новых  заказов с определенными статусами, могут быть дубли
 func (a *AppServer) updateOrdersGroup(ctx context.Context, accuralInfo <-chan model.ResponseAccuralSystem) {
 	toRecord := make([]model.ResponseAccuralSystem, 0, 100)
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
-			a.log.Debug("выход из updateOrdersGroup")
+			a.log.Debug("получен сигнал остановки. Выходим из функции обновления группы заказов")
 			return
 		case ai := <-accuralInfo:
 			toRecord = append(toRecord, ai)
@@ -87,12 +92,12 @@ func (a *AppServer) updateOrdersGroup(ctx context.Context, accuralInfo <-chan mo
 		toRecord = make([]model.ResponseAccuralSystem, 0, 100)
 	}
 }
+
+// gettingInfoFromAccuralSystem запрос к внешней системе расчета баллов лояльности
 func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-chan model.ResponseOrder) chan model.ResponseAccuralSystem {
 	accuralInfo := make(chan model.ResponseAccuralSystem, 100)
 	go func(ctx context.Context, orders <-chan model.ResponseOrder) {
-
 		defer close(accuralInfo)
-
 		req := resty.
 			New().
 			SetBaseURL(a.config.AccruralSystemAddress()).
@@ -100,10 +105,10 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 		for {
 			select {
 			case <-ctx.Done():
-				a.log.Debug("выход из gettingInfoFromAccuralSystem")
+				a.log.Debug("получен сигнал остановки. Выходим из функции запросов к внешней системе расчета баллов лояльности")
 				return
 			case o := <-orders:
-				a.log.Debug("получили заказ", slog.String("номер заказа", string(o.OrderNumber)), slog.String("статус", o.Status.Value()))
+				a.log.Debug("получили новый заказ для проверки расчета баллов", slog.String("номер заказа", string(o.OrderNumber)), slog.String("статус", o.Status.Value()))
 				result := model.ResponseAccuralSystem{}
 				resp, err := req.SetContext(ctx).SetResult(&result).Get("/api/orders/" + string(o.OrderNumber))
 				if err != nil {
@@ -115,19 +120,25 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 					)
 					continue
 				}
-				a.log.Debug("поступившая информация", slog.Int("статус", resp.StatusCode()), slog.String("заказ", string(o.OrderNumber)), slog.Any("result", result))
+				a.log.Debug(
+					"результат обращения к системе расчета баллов лояльности",
+					slog.Int("статус", resp.StatusCode()),
+					slog.String("заказ", string(o.OrderNumber)),
+					slog.Any("result", result),
+				)
 				switch resp.StatusCode() {
 				case http.StatusOK:
 					accuralInfo <- result
 				case http.StatusInternalServerError:
-					a.log.Info("система расчета баллов вернула код ошибки", slog.String("код", resp.Status()))
+					a.log.Info("система расчета баллов лояльности вернула код ошибки", slog.String("код", resp.Status()))
 				case http.StatusNoContent:
-					a.log.Info("система расчета баллов. заказа не зарегистрирован", slog.String("заказ", string(o.OrderNumber)))
+					a.log.Info("система расчета баллов лояльности вернула статус, что заказ не зарегистрирован", slog.String("заказ", string(o.OrderNumber)))
 				case http.StatusTooManyRequests:
 					select {
 					case <-ctx.Done():
-						a.log.Debug("выход из gettingInfoFromAccuralSystem")
-					case <-time.After(5 * time.Second):
+						a.log.Debug("получен сигнал остановки. Выходим из функции запросов к внешней системе расчета баллов лояльности")
+						return
+					case <-time.After(5 * time.Second): // было слишком много запросов, ждем
 					}
 				}
 			}
@@ -135,41 +146,74 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 	}(ctx, orders)
 	return accuralInfo
 }
+
+// gettingOrders используется для получения заказов с определенными статусами
 func (a *AppServer) gettingOrders(ctx context.Context) chan model.ResponseOrder {
 	ordersCh := make(chan model.ResponseOrder, 100)
+	// максимум заказов за запрос
 	limit := 100
+	// начальное смещение 0
 	offset := 0
 	go func() {
-
-		wantSt := []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing, storage.StatusRegistered}
 		defer close(ordersCh)
+
+		// заказы с этими статусами будут проверяться во внешней систему расчета баллов лояльности
+		wantSt := []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing, storage.StatusRegistered}
+
+		// это чисто для логов
+		stVal := make([]string, len(wantSt))
+		for i := range wantSt {
+			stVal[i] = wantSt[i].Value()
+		}
+
 		for {
 			select {
 			case <-ctx.Done():
-				a.log.Debug("выход из gettingOrders")
+				a.log.Debug("получен сигнал остановки. Выходим из функции получения заказов с определенными статусами")
 				return
 			default:
 			}
+
+			// получаем заказы
 			orders, err := a.storage.OrdersByStatuses(ctx, wantSt, limit, offset)
-			a.log.Debug("получено заказов", slog.Any("статусы", wantSt), slog.Any("заказы", orders), slog.Int("лимит", limit), slog.Int("смещение", offset))
+			if err != nil && !errors.Is(err, storage.ErrOrdersNotFound) {
+				a.log.Error(
+					"запрос заказов",
+					slog.Any("статусы по запросу", stVal),
+					slog.Int("лимит", limit),
+					slog.Int("смещение", offset),
+					slog.String("ошибка", err.Error()))
+				continue
+			}
+			a.log.Debug("запрос заказов", slog.Any("всего заказов", len(orders)), slog.Any("статусы по запросу", stVal), slog.Int("лимит", limit), slog.Int("смещение", offset))
 			if errors.Is(err, storage.ErrOrdersNotFound) {
 				select {
 				case <-ctx.Done():
-					a.log.Debug("выход из gettingOrders")
+					a.log.Debug("получен сигнал остановки. Выходим из функции получения заказов с определенными статусами")
 					return
-				case <-time.After(3 * time.Second):
+				case <-time.After(5 * time.Second): // ждем перед новой попыткой запроса
 				}
+				// сбрасываем смещение
 				offset = 0
 				continue
 			}
-			if err != nil {
-				a.log.Error("получение заказов по типу статуса", slog.Any("статусы", wantSt), slog.Int("лимит", limit), slog.Int("смещение", limit))
-				continue
-			}
+
+			// заказы были найдены
 			for _, o := range orders {
-				a.log.Debug("отправляем заказ", slog.String("номер заказа", string(o.OrderNumber)), slog.String("статус", o.Status.Value()))
+				a.log.Debug("подходящий заказ был найден", slog.String("номер заказа", string(o.OrderNumber)), slog.String("статус", o.Status.Value()))
 				ordersCh <- o
 			}
+
+			if len(orders) < limit {
+				select {
+				case <-ctx.Done():
+					a.log.Debug("получен сигнал остановки. Выходим из функции получения заказов с определенными статусами")
+					return
+				case <-time.After(5 * time.Second): // ждем перед новой попыткой запроса
+				}
+				continue
+			}
+
 			offset += limit
 		}
 	}()

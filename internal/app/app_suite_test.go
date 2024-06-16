@@ -1,3 +1,4 @@
+// suite тест для приложения с использованием моков
 package app
 
 import (
@@ -21,8 +22,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var port = 8188
+// AppTestSuite структура нашего suite теста
+type AppTestSuite struct {
+	suite.Suite
+	app         *AppServer
+	mockStorage *mocks.Storage
+}
 
+// Test общая структура для тестовых запросов. Не во всех тестах нужно так много полей, но это общая
 type Test struct {
 	name           string
 	path           string
@@ -31,19 +38,18 @@ type Test struct {
 	body           any
 	wantStatusCode int
 }
-type AppTestSuite struct {
-	suite.Suite
-	app         *AppServer
-	mockStorage *mocks.Storage
-}
 
+// настройка нашего теста
 func (suite *AppTestSuite) SetupSuite() {
+	// создаем логер
 	mlog, err := logger.NewLog()
 	suite.Require().NoError(err)
+	// создаем моки
 	mockStorage := new(mocks.Storage)
+	// создаем приложение
 	app := &AppServer{
 		storage: mockStorage,
-		config:  config.NewConfig(fmt.Sprintf(":%d", port), "", "", "secret"),
+		config:  config.NewConfig(fmt.Sprintf(":%d", 8188), "", "", "secret"),
 		log:     mlog.WithGroup("test-file-app"),
 	}
 	app.server = &http.Server{
@@ -52,20 +58,21 @@ func (suite *AppTestSuite) SetupSuite() {
 	}
 	suite.app = app
 	suite.mockStorage = mockStorage
-	suite.mockStorage.On("OrdersByStatuses", mock.Anything, []model.Status{storage.StatusUndefined, storage.StatusNew, storage.StatusProcessing}, 100, 0).Return(nil, storage.ErrOrdersNotFound)
 
+	// запускаем приложение
 	go func() {
 		err = suite.app.server.ListenAndServe()
 		suite.NoError(err)
 	}()
 	time.Sleep(1 * time.Second)
 }
-func (suite *AppTestSuite) TearDownSuite() {
 
+// завершение работы нашего приложения
+func (suite *AppTestSuite) TearDownSuite() {
 	suite.mockStorage.On("Close", mock.Anything).Return(nil)
 	err := suite.app.storage.Close(context.Background())
 	suite.Require().NoError(err)
-	// suite.mockStorage.AssertExpectations(suite.T())
+	suite.mockStorage.AssertExpectations(suite.T())
 }
 
 func (suite *AppTestSuite) TestMiddlewareCheckOnlyAuthUser() {

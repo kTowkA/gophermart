@@ -6,8 +6,7 @@ import (
 	"unicode/utf8"
 )
 
-// validLuhnNumber проверка числа в строке ccnS по алгоритму Луна
-// в случае прохождения проверки возвращает конвертированное из строки число и true, в ином случае 0 и false
+// validLuhnNumber проверка числа в строке ccnS по алгоритму Луна. В случае прохождения проверки возвращает конвертированное из строки число и true, в ином случае 0 и false. Взяли из википедии алгоритм на псевдокоде и переписали на go
 func validLuhnNumber(ccnS string) (int64, bool) {
 	ccnS = strings.TrimSpace(ccnS)
 	if ccnS == "" {
