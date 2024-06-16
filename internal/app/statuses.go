@@ -14,7 +14,7 @@ import (
 )
 
 func (a *AppServer) updaterStatus(ctx context.Context) {
-	a.updateOrdersGroup(
+	a.updateOrders(
 		ctx,
 		a.gettingInfoFromAccuralSystem(
 			ctx,
