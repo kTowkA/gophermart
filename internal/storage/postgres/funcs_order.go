@@ -84,7 +84,7 @@ func (p *PStorage) UpdateOrders(ctx context.Context, info []model.ResponseAccura
 	b := pgx.Batch{}
 	for _, new := range info {
 		// если был завершен расчет то сохраняем в таблице пополнений
-		if new.Status == storage.StatusProcessed {
+		if new.Status.Value() == storage.StatusProcessed.Value() {
 			replenishmentID := uuid.New()
 			b.Queue(
 				`INSERT INTO replenishments(replenishment_id,order_id,sum,replenishment_at) 
