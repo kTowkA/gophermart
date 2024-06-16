@@ -38,7 +38,7 @@ type AppTestSuite struct {
 }
 
 func (suite *AppTestSuite) SetupSuite() {
-	mlog, err := logger.New()
+	mlog, err := logger.NewLog()
 	suite.Require().NoError(err)
 	mockStorage := new(mocks.Storage)
 	app := &AppServer{
