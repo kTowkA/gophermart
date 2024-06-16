@@ -64,7 +64,7 @@ func (a *AppServer) updateOrders(ctx context.Context, accuralInfo <-chan model.R
 }
 func (a *AppServer) updateOrdersGroup(ctx context.Context, accuralInfo <-chan model.ResponseAccuralSystem) {
 	toRecord := make([]model.ResponseAccuralSystem, 0, 100)
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
