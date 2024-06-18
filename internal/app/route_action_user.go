@@ -34,7 +34,7 @@ func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	orderErr := a.storage.SaveOrder(r.Context(), uc.UserID, model.OrderNumber(orderBytes))
-	w.WriteHeader(orderErr.HttpStatus)
+	w.WriteHeader(orderErr.HTTPStatus)
 }
 func (a *AppServer) rOrdersGet(w http.ResponseWriter, r *http.Request) {
 	uc, ok := (r.Context().Value(userClaims{})).(UserClaims)
