@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/kTowkA/gophermart/internal/luhn"
 	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
 )
@@ -40,7 +41,7 @@ func (a *AppServer) rWithdraw(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	_, ok := validLuhnNumber(string(req.OrderNumber))
+	_, ok := luhn.ValidateLuhnNumber(string(req.OrderNumber))
 	if !ok {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return

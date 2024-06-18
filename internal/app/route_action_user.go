@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/kTowkA/gophermart/internal/luhn"
 	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
 )
@@ -22,7 +23,7 @@ func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	_, ok := validLuhnNumber(string(orderBytes))
+	_, ok := luhn.ValidateLuhnNumber(string(orderBytes))
 	if !ok {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return

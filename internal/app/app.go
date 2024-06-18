@@ -49,8 +49,8 @@ func RunApp(ctx context.Context, cfg config.Config, log *logger.Log) error {
 		return err
 	}
 	app.storage = storage
-	// так как в pgx.Pool не используется контекст для закрытия обходимся context.Background()
-	defer app.storage.Close(context.Background())
+
+	defer app.storage.Close(ctx)
 
 	group, ctxErr := errgroup.WithContext(ctx)
 
@@ -84,9 +84,8 @@ func RunApp(ctx context.Context, cfg config.Config, log *logger.Log) error {
 		// ждем контекст отмены
 		<-ctxErr.Done()
 
-		// пытаемся завершить приложение за wait времени
-		wait := 10 * time.Second
-		shutdownCtx, cancelShutdownCtx := context.WithTimeout(context.Background(), wait)
+		// пытаемся завершить приложение за config.ShutdownServerSec времени
+		shutdownCtx, cancelShutdownCtx := context.WithTimeout(context.Background(), config.ShutdownServerSec*time.Second)
 		defer cancelShutdownCtx()
 		if err := app.server.Shutdown(shutdownCtx); err != nil {
 			app.log.Error("остановка сервера", slog.String("ошибка", err.Error()))
