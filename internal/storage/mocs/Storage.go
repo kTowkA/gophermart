@@ -8,6 +8,8 @@ import (
 	model "github.com/kTowkA/gophermart/internal/model"
 	mock "github.com/stretchr/testify/mock"
 
+	storage "github.com/kTowkA/gophermart/internal/storage"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -151,18 +153,18 @@ func (_m *Storage) OrdersByStatuses(ctx context.Context, statuses []model.Status
 }
 
 // SaveOrder provides a mock function with given fields: ctx, userID, orderNum
-func (_m *Storage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) error {
+func (_m *Storage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) storage.ErrorWithHttpStatus {
 	ret := _m.Called(ctx, userID, orderNum)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveOrder")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, model.OrderNumber) error); ok {
+	var r0 storage.ErrorWithHttpStatus
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, model.OrderNumber) storage.ErrorWithHttpStatus); ok {
 		r0 = rf(ctx, userID, orderNum)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(storage.ErrorWithHttpStatus)
 	}
 
 	return r0

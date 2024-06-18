@@ -23,9 +23,12 @@ type Storage interface {
 	HashPassword(ctx context.Context, userID uuid.UUID) (string, error)
 
 	// SaveOrder сохраняет заказ orderNum в системе, привязывая его к пользователю userID.
-	// Возвращает ErrOrderWasUploadByAnotherUser если другой пользователь уже загрузил заказ с таким номером.
-	// Возвращает ErrOrderWasAlreadyUpload если пользователь уже сохранял заказ order.
-	SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) error
+	// Возвращает структуру ErrorWithHttpStatus с ошибкой бд и рекомендуемым кодом http.
+	// Возвращает ErrOrderWasUploadByAnotherUser + http.StatusConflict если другой пользователь уже загрузил заказ с таким номером.
+	// Возвращает ErrOrderWasAlreadyUpload+http.StatusOK если пользователь уже сохранял заказ order.
+	// В других случаях при возникновении ошибки возвращает ошибку и http.StatusInternalServerError.
+	// В случае принятия заказа ошибка будет nil и код http.StatusAccepted
+	SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) ErrorWithHttpStatus
 
 	// Orders возвращает все заказы для пользователя userID.
 	// При отсутствии заказов возвращает ErrOrdersNotFound

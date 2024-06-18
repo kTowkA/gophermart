@@ -12,3 +12,9 @@ var (
 	ErrWithdrawNotEnough           = errors.New("пользователю не хватает средств для списания")
 	ErrNothingHasBeenDone          = errors.New("данные уже актуальны")
 )
+
+// ErrorWithHttpStatus содержит ошибку базы данных и рекомендуемый ей http status код
+type ErrorWithHttpStatus struct {
+	StorageError error
+	HttpStatus   int
+}

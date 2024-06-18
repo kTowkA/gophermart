@@ -33,17 +33,8 @@ func (a *AppServer) rOrdersPost(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = a.storage.SaveOrder(r.Context(), uc.UserID, model.OrderNumber(orderBytes))
-	switch {
-	case errors.Is(err, storage.ErrOrderWasAlreadyUpload):
-		w.WriteHeader(http.StatusOK)
-	case errors.Is(err, storage.ErrOrderWasUploadByAnotherUser):
-		w.WriteHeader(http.StatusConflict)
-	case err != nil:
-		w.WriteHeader(http.StatusInternalServerError)
-	default:
-		w.WriteHeader(http.StatusAccepted)
-	}
+	orderErr := a.storage.SaveOrder(r.Context(), uc.UserID, model.OrderNumber(orderBytes))
+	w.WriteHeader(orderErr.HttpStatus)
 }
 func (a *AppServer) rOrdersGet(w http.ResponseWriter, r *http.Request) {
 	uc, ok := (r.Context().Value(userClaims{})).(UserClaims)

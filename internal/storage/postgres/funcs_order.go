@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,11 +13,14 @@ import (
 	"github.com/kTowkA/gophermart/internal/storage"
 )
 
-func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) error {
+func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) storage.ErrorWithHttpStatus {
 	tx, err := p.Begin(ctx)
 	if err != nil {
 		p.Error("создание транзакции", slog.String("ошибка", err.Error()))
-		return err
+		return storage.ErrorWithHttpStatus{
+			StorageError: err,
+			HttpStatus:   http.StatusInternalServerError,
+		}
 	}
 
 	// проверка, что такого заказа не было
@@ -30,16 +34,25 @@ func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum mod
 		if userIDintoDB == userID {
 			p.Warn("поиск заказа по переданному orderNum. пользователь уже загружал заказ", slog.String("номер заказа", string(orderNum)))
 			_ = tx.Rollback(ctx)
-			return storage.ErrOrderWasAlreadyUpload
+			return storage.ErrorWithHttpStatus{
+				StorageError: storage.ErrOrderWasAlreadyUpload,
+				HttpStatus:   http.StatusOK,
+			}
 		}
 		p.Warn("поиск заказа по переданному orderNum. заказ загружал другой пользователь", slog.String("номер заказа", string(orderNum)))
 		_ = tx.Rollback(ctx)
-		return storage.ErrOrderWasUploadByAnotherUser
+		return storage.ErrorWithHttpStatus{
+			StorageError: storage.ErrOrderWasUploadByAnotherUser,
+			HttpStatus:   http.StatusConflict,
+		}
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		p.Error("поиск пользователя создающего заказ", slog.String("номер заказа", string(orderNum)), slog.String("ошибка", err.Error()))
 		_ = tx.Rollback(ctx)
-		return err
+		return storage.ErrorWithHttpStatus{
+			StorageError: err,
+			HttpStatus:   http.StatusInternalServerError,
+		}
 	}
 
 	// создание нового заказа
@@ -57,7 +70,10 @@ func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum mod
 	if err != nil {
 		p.Error("сохранение заказа", slog.String("номер заказа", string(orderNum)), slog.String("пользователь", userID.String()), slog.String("ошибка", err.Error()))
 		_ = tx.Rollback(ctx)
-		return err
+		return storage.ErrorWithHttpStatus{
+			StorageError: err,
+			HttpStatus:   http.StatusInternalServerError,
+		}
 	}
 
 	// привязывание статуса
@@ -72,15 +88,24 @@ func (p *PStorage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum mod
 	if err != nil {
 		p.Error("сохранение связи статус-заказ", slog.String("номер заказа", string(orderNum)), slog.String("статус", storage.StatusNew.Value()), slog.String("пользователь", userID.String()), slog.String("ошибка", err.Error()))
 		_ = tx.Rollback(ctx)
-		return err
+		return storage.ErrorWithHttpStatus{
+			StorageError: err,
+			HttpStatus:   http.StatusInternalServerError,
+		}
 	}
 	err = tx.Commit(ctx)
 	if err != nil {
 		p.Error("сохранение заказа. фиксация изменений", slog.String("номер заказа", string(orderNum)), slog.String("пользователь", userID.String()), slog.String("ошибка", err.Error()))
-		return err
+		return storage.ErrorWithHttpStatus{
+			StorageError: err,
+			HttpStatus:   http.StatusInternalServerError,
+		}
 	}
 	p.Debug("успешное сохранение нового заказа", slog.String("заказ", string(orderNum)), slog.String("ID заказа", orderID.String()), slog.String("пользователь", userID.String()))
-	return nil
+	return storage.ErrorWithHttpStatus{
+		StorageError: nil,
+		HttpStatus:   http.StatusAccepted,
+	}
 }
 
 func (p *PStorage) UpdateOrders(ctx context.Context, info []model.ResponseAccuralSystem) (int, error) {
