@@ -153,18 +153,18 @@ func (_m *Storage) OrdersByStatuses(ctx context.Context, statuses []model.Status
 }
 
 // SaveOrder provides a mock function with given fields: ctx, userID, orderNum
-func (_m *Storage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) storage.ErrorWithHttpStatus {
+func (_m *Storage) SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) storage.ErrorWithHTTPStatus {
 	ret := _m.Called(ctx, userID, orderNum)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveOrder")
 	}
 
-	var r0 storage.ErrorWithHttpStatus
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, model.OrderNumber) storage.ErrorWithHttpStatus); ok {
+	var r0 storage.ErrorWithHTTPStatus
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, model.OrderNumber) storage.ErrorWithHTTPStatus); ok {
 		r0 = rf(ctx, userID, orderNum)
 	} else {
-		r0 = ret.Get(0).(storage.ErrorWithHttpStatus)
+		r0 = ret.Get(0).(storage.ErrorWithHTTPStatus)
 	}
 
 	return r0

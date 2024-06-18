@@ -28,7 +28,7 @@ type Storage interface {
 	// Возвращает ErrOrderWasAlreadyUpload+http.StatusOK если пользователь уже сохранял заказ order.
 	// В других случаях при возникновении ошибки возвращает ошибку и http.StatusInternalServerError.
 	// В случае принятия заказа ошибка будет nil и код http.StatusAccepted
-	SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) ErrorWithHttpStatus
+	SaveOrder(ctx context.Context, userID uuid.UUID, orderNum model.OrderNumber) ErrorWithHTTPStatus
 
 	// Orders возвращает все заказы для пользователя userID.
 	// При отсутствии заказов возвращает ErrOrdersNotFound

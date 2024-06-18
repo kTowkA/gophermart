@@ -258,9 +258,9 @@ func (suite *AppTestSuite) TestRouteOrdersPost() {
 	client, _, err := suite.LoggedClient(ctx, "login orders post", "password", "TestRouteOrdersPost")
 	suite.Require().NoError(err)
 
-	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("49927398716")).Return(storage.ErrorWithHttpStatus{StorageError: nil, HttpStatus: http.StatusAccepted})
-	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("5062821234567892")).Return(storage.ErrorWithHttpStatus{StorageError: storage.ErrOrderWasAlreadyUpload, HttpStatus: http.StatusOK})
-	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("1234561239")).Return(storage.ErrorWithHttpStatus{StorageError: storage.ErrOrderWasUploadByAnotherUser, HttpStatus: http.StatusConflict})
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("49927398716")).Return(storage.ErrorWithHTTPStatus{StorageError: nil, HTTPStatus: http.StatusAccepted})
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("5062821234567892")).Return(storage.ErrorWithHTTPStatus{StorageError: storage.ErrOrderWasAlreadyUpload, HTTPStatus: http.StatusOK})
+	suite.mockStorage.On("SaveOrder", mock.Anything, mock.Anything, model.OrderNumber("1234561239")).Return(storage.ErrorWithHTTPStatus{StorageError: storage.ErrOrderWasUploadByAnotherUser, HTTPStatus: http.StatusConflict})
 	tests := []Test{
 		{
 			name:           "ошибочный контент-тайп",

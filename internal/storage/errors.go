@@ -14,7 +14,7 @@ var (
 )
 
 // ErrorWithHttpStatus содержит ошибку базы данных и рекомендуемый ей http status код
-type ErrorWithHttpStatus struct {
+type ErrorWithHTTPStatus struct {
 	StorageError error
-	HttpStatus   int
+	HTTPStatus   int
 }
