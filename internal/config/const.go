@@ -1,5 +1,6 @@
 package config
 
 const (
-	ShutdownServerSec = 10
+	ShutdownServerSec      = 10
+	UpdateGroupStatusesSec = 10
 )

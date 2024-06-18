@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
 )
@@ -69,7 +70,7 @@ func (a *AppServer) updateOrders(ctx context.Context, accuralInfo <-chan model.R
 // updateOrdersGroup обновляет сразу группу. Можно использовать эту функцию вместо updateOrders, единственное - при тикере больше чем время получения новых  заказов с определенными статусами, могут быть дубли
 func (a *AppServer) updateOrdersGroup(ctx context.Context, accuralInfo <-chan model.ResponseAccuralSystem) {
 	toRecord := make([]model.ResponseAccuralSystem, 0, 100)
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(config.UpdateGroupStatusesSec * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
@@ -100,6 +101,11 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 		defer close(accuralInfo)
 		req := resty.
 			New().
+			AddRetryCondition(func(r *resty.Response, err error) bool {
+				return err != nil || r.StatusCode() == http.StatusTooManyRequests
+			}).
+			SetRetryCount(3).
+			SetRetryWaitTime(5 * time.Second).
 			SetBaseURL(a.config.AccruralSystemAddress()).
 			R()
 		for {
@@ -129,17 +135,10 @@ func (a *AppServer) gettingInfoFromAccuralSystem(ctx context.Context, orders <-c
 				switch resp.StatusCode() {
 				case http.StatusOK:
 					accuralInfo <- result
-				case http.StatusInternalServerError:
-					a.log.Info("система расчета баллов лояльности вернула код ошибки", slog.String("код", resp.Status()))
 				case http.StatusNoContent:
 					a.log.Info("система расчета баллов лояльности вернула статус, что заказ не зарегистрирован", slog.String("заказ", string(o.OrderNumber)))
-				case http.StatusTooManyRequests:
-					select {
-					case <-ctx.Done():
-						a.log.Debug("получен сигнал остановки. Выходим из функции запросов к внешней системе расчета баллов лояльности")
-						return
-					case <-time.After(5 * time.Second): // было слишком много запросов, ждем
-					}
+				default:
+					a.log.Info("система расчета баллов лояльности вернула код ошибки", slog.String("код", resp.Status()))
 				}
 			}
 		}
