@@ -42,11 +42,7 @@ func RunApp(ctx context.Context, cfg config.Config, log *logger.Log) error {
 	if cfg.DatabaseURI() == "" {
 		app.log.Error("невозможно запустить приложение. отсутствует строка подключения к базе данных")
 	}
-	err := postgres.Migration(cfg.DatabaseURI())
-	if err != nil {
-		app.log.Error("проведение миграций", slog.String("DatabaseURI", cfg.DatabaseURI()), slog.String("ошибка", err.Error()))
-		return err
-	}
+
 	storage, err := postgres.NewStorage(ctx, cfg.DatabaseURI(), log)
 	if err != nil {
 		app.log.Error("подключение к БД", slog.String("DatabaseURI", cfg.DatabaseURI()), slog.String("ошибка", err.Error()))

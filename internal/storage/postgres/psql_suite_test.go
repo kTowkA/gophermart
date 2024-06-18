@@ -15,6 +15,7 @@ import (
 	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
+	"github.com/kTowkA/gophermart/internal/storage/postgres/migrations"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 )
@@ -40,17 +41,25 @@ func (suite *PStorageTestSuite) SetupSuite() {
 	resource, err := pool.Run("postgres", "16", []string{"POSTGRES_USER=user", "POSTGRES_PASSWORD=pass"})
 	suite.Require().NoError(err)
 
-	var connString string
-	err = pool.Retry(func() error {
+	connString := fmt.Sprintf("postgresql://user:pass@localhost:%s/user?sslmode=disable", resource.GetPort("5432/tcp"))
+
+	// не нравится мне retry от dockertest, не всегда срабатывает нормально
+	for range []int{1, 2, 3} {
 		time.Sleep(5 * time.Second)
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		connString = fmt.Sprintf("postgresql://user:pass@localhost:%s/user?sslmode=disable", resource.GetPort("5432/tcp"))
-		conn, err := pgx.Connect(ctx, connString)
-		suite.Require().NoError(err)
-		defer conn.Close(ctx)
-		return conn.Ping(ctx)
-	})
+		err = func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			conn, err := pgx.Connect(ctx, connString)
+			if err != nil {
+				return err
+			}
+			defer conn.Close(ctx)
+			return conn.Ping(ctx)
+		}()
+		if err == nil {
+			break
+		}
+	}
 	suite.Require().NoError(err)
 
 	suite.clear = dockerClear{
@@ -60,7 +69,7 @@ func (suite *PStorageTestSuite) SetupSuite() {
 	// ---------------------------------------------------------------------------------------------------
 	mlog, err := logger.NewLog()
 	suite.Require().NoError(err)
-	err = Migration(connString)
+	err = migrations.MigrationsUP(connString)
 	suite.Require().NoError(err)
 	ps, err := NewStorage(context.Background(), connString, mlog)
 	suite.Require().NoError(err)

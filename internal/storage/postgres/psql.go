@@ -2,24 +2,16 @@ package postgres
 
 import (
 	"context"
-	"embed"
 	"errors"
-	"fmt"
 	"log/slog"
-	"strings"
 
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kTowkA/gophermart/internal/logger"
 	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
 )
-
-//go:embed migrations/*.sql
-var fs embed.FS
 
 type PStorage struct {
 	*pgxpool.Pool
@@ -53,24 +45,6 @@ func NewStorage(ctx context.Context, connString string, logger *logger.Log) (*PS
 		return nil, err
 	}
 	return &ps, nil
-}
-
-// проведение миграций.
-// вначале было неэкспортируемой функцией и миграции проводились при создании хранилища, но потом сделал так, чтобы миграции проводило приложение. Может это неверное решение
-func Migration(connString string) error {
-	d, err := iofs.New(fs, "migrations")
-	if err != nil {
-		return fmt.Errorf("создание драйвера для считывания миграций. %w", err)
-	}
-	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(connString, "postgresql", "pgx5", 1))
-	if err != nil {
-		return fmt.Errorf("создание экземпляра миграций. %w", err)
-	}
-	err = m.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return fmt.Errorf("применение миграций. %w", err)
-	}
-	return nil
 }
 
 func (p *PStorage) SaveStatuses(ctx context.Context, statuses []*model.Status) error {

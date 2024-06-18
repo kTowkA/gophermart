@@ -13,6 +13,7 @@ import (
 	"github.com/kTowkA/gophermart/internal/app"
 	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/logger"
+	"github.com/kTowkA/gophermart/internal/storage/postgres/migrations"
 )
 
 func main() {
@@ -36,6 +37,12 @@ func main() {
 		slog.String("строка подключения базы данных", cfg.DatabaseURI()),
 		slog.String("адрес расчета системы лояльности", cfg.AccruralSystemAddress()),
 	)
+
+	err = migrations.MigrationsUP(cfg.DatabaseURI())
+	if err != nil {
+		logger.Error("проведение миграций postgres", slog.String("строка подключения базы данных", cfg.DatabaseURI()), slog.String("ошибка", err.Error()))
+		return
+	}
 
 	// главный контекст приложения для отмены по ctrl+c + syscall.SIGTERM (он вроде отвечает за сигнал отмены в контейнерах)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
