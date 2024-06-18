@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/kTowkA/gophermart/internal/config"
 	"github.com/kTowkA/gophermart/internal/model"
 	"github.com/kTowkA/gophermart/internal/storage"
 )
@@ -70,7 +69,7 @@ func (a *AppServer) updateOrders(ctx context.Context, accuralInfo <-chan model.R
 // updateOrdersGroup обновляет сразу группу. Можно использовать эту функцию вместо updateOrders, единственное - при тикере больше чем время получения новых  заказов с определенными статусами, могут быть дубли
 func (a *AppServer) updateOrdersGroup(ctx context.Context, accuralInfo <-chan model.ResponseAccuralSystem) {
 	toRecord := make([]model.ResponseAccuralSystem, 0, 100)
-	ticker := time.NewTicker(config.UpdateGroupStatusesSec * time.Second)
+	ticker := time.NewTicker(time.Duration(a.config.UpdateGroupStatusesSec()) * time.Second)
 	for {
 		select {
 		case <-ctx.Done():

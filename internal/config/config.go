@@ -11,13 +11,6 @@ const (
 	secret = "my gophermart secret"
 )
 
-// переменные для хранения значений флагов приложения
-var (
-	addressApp            string
-	databaseURI           string
-	acrcuralSystemAddress string
-)
-
 // Config кастомный конфиг приложения.Чтобы случайно не поменяли значение, делаем их неэкспортируемыми
 type Config struct {
 	addressApp            string
@@ -26,6 +19,12 @@ type Config struct {
 	secret                string
 }
 
+func (c Config) ShutdownServerSec() int {
+	return shutdownServerSec
+}
+func (c Config) UpdateGroupStatusesSec() int {
+	return updateGroupStatusesSec
+}
 func (c Config) CookieTokenName() string {
 	return "app_token"
 }
@@ -53,10 +52,12 @@ type PublicConfig struct {
 // LoadConfig загрузка конфигурации. В приоритете будут переменные окружения
 func LoadConfig() (Config, error) {
 
-	// чтение флагов командной строки
-	flag.StringVar(&addressApp, "a", "", "run address app")
-	flag.StringVar(&databaseURI, "d", "", "database URI")
-	flag.StringVar(&acrcuralSystemAddress, "r", "", "accrural system address")
+	// переменные для хранения значений флагов приложения
+	var (
+		addressApp            = flag.String("a", "", "run address app")
+		databaseURI           = flag.String("d", "", "database URI")
+		acrcuralSystemAddress = flag.String("r", "", "accrural system address")
+	)
 	flag.Parse()
 
 	pcfg := PublicConfig{}
@@ -69,13 +70,13 @@ func LoadConfig() (Config, error) {
 
 	// замена значений при отсутсвии переменных окружения
 	if pcfg.AddressApp == "" {
-		pcfg.AddressApp = addressApp
+		pcfg.AddressApp = *addressApp
 	}
 	if pcfg.DatabaseURI == "" {
-		pcfg.DatabaseURI = databaseURI
+		pcfg.DatabaseURI = *databaseURI
 	}
 	if pcfg.AccruralSystemAddress == "" {
-		pcfg.AccruralSystemAddress = acrcuralSystemAddress
+		pcfg.AccruralSystemAddress = *acrcuralSystemAddress
 	}
 	if pcfg.Secret == "" {
 		pcfg.Secret = secret

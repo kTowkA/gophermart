@@ -85,7 +85,7 @@ func RunApp(ctx context.Context, cfg config.Config, log *logger.Log) error {
 		<-ctxErr.Done()
 
 		// пытаемся завершить приложение за config.ShutdownServerSec времени
-		shutdownCtx, cancelShutdownCtx := context.WithTimeout(context.Background(), config.ShutdownServerSec*time.Second)
+		shutdownCtx, cancelShutdownCtx := context.WithTimeout(context.Background(), time.Duration(app.config.ShutdownServerSec())*time.Second)
 		defer cancelShutdownCtx()
 		if err := app.server.Shutdown(shutdownCtx); err != nil {
 			app.log.Error("остановка сервера", slog.String("ошибка", err.Error()))
