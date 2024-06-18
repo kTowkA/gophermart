@@ -110,7 +110,7 @@ func (suite *AppTestSuite) TestMiddlewareCheckOnlyAuthUser() {
 			err  error
 		)
 		req := resty.New().
-			SetHeader("content-type", "application/json").
+			SetHeader("Content-type", "application/json").
 			SetBaseURL("http://localhost" + suite.app.config.AddressApp()).
 			R().
 			SetContext(ctx).
@@ -181,7 +181,7 @@ func (suite *AppTestSuite) TestRouteRegister() {
 	defer cancel()
 
 	client := resty.New().
-		SetHeader("content-type", "application/json").
+		SetHeader("Content-type", "application/json").
 		SetBaseURL("http://localhost" + suite.app.config.AddressApp())
 	for _, t := range tests {
 		resp, err := client.R().
@@ -240,7 +240,7 @@ func (suite *AppTestSuite) TestRouteLogin() {
 
 	for _, t := range tests {
 		resp, err := resty.New().
-			SetHeader("content-type", "application/json").
+			SetHeader("Content-type", "application/json").
 			SetBaseURL("http://localhost" + suite.app.config.AddressApp()).
 			R().
 			SetBody(t.body).
@@ -313,7 +313,7 @@ func (suite *AppTestSuite) TestRouteOrdersPost() {
 	}
 
 	for _, t := range tests {
-		resp, err := client.R().SetContext(ctx).SetBody(t.body).SetHeader("content-type", t.contentType).Post(t.path)
+		resp, err := client.R().SetContext(ctx).SetBody(t.body).SetHeader("Content-type", t.contentType).Post(t.path)
 		suite.NoError(err, t.name)
 		suite.EqualValues(t.wantStatusCode, resp.StatusCode(), t.name)
 	}
@@ -335,7 +335,7 @@ func (suite *AppTestSuite) LoggedClient(ctx context.Context, login, password str
 	resp, err := client.
 		R().SetContext(ctx).
 		SetBody(`{"login":"`+login+`","password":"`+password+`"}`).
-		SetHeader("content-type", "application/json").
+		SetHeader("Content-type", "application/json").
 		Post("/api/user/login")
 	suite.NoError(err, "logged client", "called: "+called)
 	suite.EqualValues(http.StatusOK, resp.StatusCode(), "logged client", "called: "+called)
@@ -481,7 +481,7 @@ func (suite *AppTestSuite) TestWithdraw() {
 	suite.mockStorage.On("Withdraw", mock.Anything, userID, reqOK).Return(nil)
 	tests := []Test{
 		{
-			name:           "неверный content-type",
+			name:           "неверный Content-type",
 			contentType:    "application/xml",
 			wantStatusCode: http.StatusBadRequest,
 		},
@@ -520,7 +520,7 @@ func (suite *AppTestSuite) TestWithdraw() {
 	for _, t := range tests {
 		resp, err := client.R().
 			SetBody(t.body).
-			SetHeader("content-type", t.contentType).
+			SetHeader("Content-type", t.contentType).
 			Post("/api/user/balance/withdraw")
 		suite.NoError(err, t.name)
 		suite.EqualValues(t.wantStatusCode, resp.StatusCode())

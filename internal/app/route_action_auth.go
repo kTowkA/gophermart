@@ -14,7 +14,7 @@ import (
 )
 
 // rRegister хендлер для регистрации пользователей
-func (a *AppServer) rRegister(w http.ResponseWriter, r *http.Request) {
+func (a *AppServer) rRegisterUser(w http.ResponseWriter, r *http.Request) {
 	if !checkContentType(r, []string{"application/json"}) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -60,13 +60,13 @@ func (a *AppServer) rRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// выставляем новый токен в куках, чтобы пользователь дальше его продолжил использовать
-	http.SetCookie(w, &http.Cookie{Name: cookieTokenName, Value: token})
+	http.SetCookie(w, &http.Cookie{Name: a.config.CookieTokenName(), Value: token})
 
 	w.WriteHeader(http.StatusOK)
 }
 
 // rLogin хендлер для получения токена для работы
-func (a *AppServer) rLogin(w http.ResponseWriter, r *http.Request) {
+func (a *AppServer) rLoginUser(w http.ResponseWriter, r *http.Request) {
 	if !checkContentType(r, []string{"application/json"}) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -119,7 +119,7 @@ func (a *AppServer) rLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// выставляем новый токен в куках, чтобы пользователь дальше его продолжил использовать
-	http.SetCookie(w, &http.Cookie{Name: cookieTokenName, Value: token})
+	http.SetCookie(w, &http.Cookie{Name: a.config.CookieTokenName(), Value: token})
 
 	w.WriteHeader(http.StatusOK)
 }

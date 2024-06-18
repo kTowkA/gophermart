@@ -100,8 +100,8 @@ func (a *AppServer) createRoute() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middlewarePostBody, a.middlewareAuthUser, a.middlewareLog)
 	r.Route("/api/user", func(r chi.Router) {
-		r.Post("/register", a.rRegister)
-		r.Post("/login", a.rLogin)
+		r.Post("/register", a.rRegisterUser)
+		r.Post("/login", a.rLoginUser)
 		r.Post("/orders", a.rOrdersPost)
 		r.Get("/orders", a.rOrdersGet)
 		r.Route("/balance", func(r chi.Router) {

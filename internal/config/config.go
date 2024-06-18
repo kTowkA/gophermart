@@ -26,6 +26,9 @@ type Config struct {
 	secret                string
 }
 
+func (c Config) CookieTokenName() string {
+	return "app_token"
+}
 func (c Config) AddressApp() string {
 	return c.addressApp
 }

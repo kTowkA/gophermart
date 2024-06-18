@@ -9,9 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// cookieTokenName название ключа с токеном в куках
-var cookieTokenName = "app_token"
-
 // Claims — структура утверждений, которая включает стандартные утверждения и одно пользовательское UserClaims
 type Claims struct {
 	jwt.RegisteredClaims

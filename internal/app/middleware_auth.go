@@ -30,14 +30,14 @@ func (a *AppServer) middlewareAuthUser(next http.Handler) http.Handler {
 		}
 
 		// получаем токен из кук
-		cookieToken, err := r.Cookie(cookieTokenName)
+		cookieToken, err := r.Cookie(a.config.CookieTokenName())
 		if errors.Is(err, http.ErrNoCookie) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		if err != nil {
 			a.log.Error("получение значения куки",
-				slog.String("кука", cookieTokenName),
+				slog.String("кука", a.config.CookieTokenName()),
 				slog.String("ошибка", err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return

@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-// checkContentType вначале было middleware, но теперь просто вспомогательная функция для проверки content-type
+// checkContentType вначале было middleware, но теперь просто вспомогательная функция для проверки Сontent-type
 func checkContentType(r *http.Request, allowedContentTypes []string) bool {
-	ct := r.Header.Get("content-type")
+	ct := r.Header.Get("Сontent-type")
 	for _, act := range allowedContentTypes {
 		if strings.HasPrefix(ct, act) {
 			return true
