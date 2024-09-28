@@ -23,3 +23,6 @@ git fetch template && git checkout template/master .github
 ```
 
 Затем добавьте полученные изменения в свой репозиторий.
+
+![Иллюстрация к проекту](ar.png)
+![Схема БД](bd.png)
